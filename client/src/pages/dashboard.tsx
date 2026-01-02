@@ -22,7 +22,6 @@ import {
   AlertCircle
 } from "lucide-react";
 import { Link } from "wouter";
-import ewLogoPath from "@assets/image_1767372817773.png";
 import {
   AreaChart,
   Area,
@@ -116,9 +115,6 @@ export default function Dashboard() {
 
   return (
     <div className="p-8 space-y-8 max-w-5xl mx-auto">
-      <div className="flex justify-center mb-6 py-8 -mx-8 -mt-8 px-8 bg-[#1a1d21]">
-        <img src={ewLogoPath} alt="EduWealth" className="h-40 w-auto object-contain" />
-      </div>
       <div>
         <h1 className="text-4xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground mt-1">Welcome back. Here's your financial overview.</p>
