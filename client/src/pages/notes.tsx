@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import {
@@ -27,9 +35,12 @@ import {
   ListTodo,
   Loader2,
   Download,
-  Trash2
+  Trash2,
+  Tag
 } from "lucide-react";
 import type { SeminarNote, Seminar } from "@shared/schema";
+
+const noteCategories = ["General", "Career", "Technology", "Finance", "Personal Development", "Business"];
 
 interface NoteWithParsed extends SeminarNote {
   parsedKeyPoints?: string[];
@@ -39,6 +50,9 @@ interface NoteWithParsed extends SeminarNote {
 export default function Notes() {
   const [searchQuery, setSearchQuery] = useState("");
   const [aiInput, setAiInput] = useState("");
+  const [noteTitle, setNoteTitle] = useState("");
+  const [noteCategory, setNoteCategory] = useState("General");
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -51,13 +65,15 @@ export default function Notes() {
   });
 
   const generateNotesMutation = useMutation({
-    mutationFn: async (transcript: string) => {
-      const response = await apiRequest("POST", "/api/notes/generate", { transcript });
+    mutationFn: async (data: { transcript: string; title: string; category: string }) => {
+      const response = await apiRequest("POST", "/api/notes/generate", data);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
       setAiInput("");
+      setNoteTitle("");
+      setNoteCategory("General");
       toast({
         title: "Notes generated!",
         description: "Your AI-powered notes have been created.",
@@ -110,11 +126,15 @@ export default function Notes() {
 
   const filteredNotes = notes
     .map(parseNote)
-    .filter((note) =>
-      note.content.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    .filter((note) => {
+      const matchesSearch = note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (note.title?.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesCategory = !categoryFilter || note.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
 
-  const getSeminarTitle = (seminarId: number) => {
+  const getSeminarTitle = (seminarId: number | null) => {
+    if (!seminarId) return "General Notes";
     const seminar = seminars.find(s => s.id === seminarId);
     return seminar?.title || "General Notes";
   };
@@ -176,15 +196,32 @@ export default function Notes() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search notes..."
-              className="pl-9 bg-muted/50 border-0"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              data-testid="input-search-notes"
-            />
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search notes..."
+                className="pl-9 bg-muted/50 border-0"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                data-testid="input-search-notes"
+              />
+            </div>
+            <Select
+              value={categoryFilter || "all"}
+              onValueChange={(value) => setCategoryFilter(value === "all" ? null : value)}
+            >
+              <SelectTrigger className="w-[180px] bg-muted/50 border-0" data-testid="select-category-filter">
+                <Tag className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {noteCategories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-3">
@@ -192,15 +229,22 @@ export default function Notes() {
               <div key={note.id} className="p-5 rounded-xl bg-card hover-elevate" data-testid={`card-note-${note.id}`}>
                 <div className="flex items-start justify-between gap-4 mb-3">
                   <div>
-                    <h3 className="font-semibold">{getSeminarTitle(note.seminarId)}</h3>
+                    <h3 className="font-semibold">{note.title || getSeminarTitle(note.seminarId)}</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {formatDate(note.createdAt)}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="gap-1 flex-shrink-0">
-                    <Sparkles className="h-3 w-3" />
-                    AI
-                  </Badge>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {note.category && (
+                      <Badge variant="outline" className="text-xs">
+                        {note.category}
+                      </Badge>
+                    )}
+                    <Badge variant="secondary" className="gap-1">
+                      <Sparkles className="h-3 w-3" />
+                      AI
+                    </Badge>
+                  </div>
                 </div>
 
                 <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
@@ -352,16 +396,48 @@ export default function Notes() {
             <p className="text-sm text-muted-foreground mb-4">
               Paste your seminar transcript and AI will extract key points and action items.
             </p>
-            <Textarea
-              placeholder="Paste transcript here..."
-              className="min-h-28 mb-3 bg-muted/50 border-0"
-              value={aiInput}
-              onChange={(e) => setAiInput(e.target.value)}
-              data-testid="textarea-ai-input"
-            />
+            <div className="space-y-3 mb-3">
+              <div>
+                <Label className="text-xs">Title</Label>
+                <Input
+                  placeholder="Note title..."
+                  className="mt-1 bg-muted/50 border-0"
+                  value={noteTitle}
+                  onChange={(e) => setNoteTitle(e.target.value)}
+                  data-testid="input-note-title"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Category</Label>
+                <Select value={noteCategory} onValueChange={setNoteCategory}>
+                  <SelectTrigger className="mt-1 bg-muted/50 border-0" data-testid="select-note-category">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {noteCategories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Transcript</Label>
+                <Textarea
+                  placeholder="Paste transcript here..."
+                  className="mt-1 min-h-28 bg-muted/50 border-0"
+                  value={aiInput}
+                  onChange={(e) => setAiInput(e.target.value)}
+                  data-testid="textarea-ai-input"
+                />
+              </div>
+            </div>
             <Button
               className="w-full"
-              onClick={() => generateNotesMutation.mutate(aiInput)}
+              onClick={() => generateNotesMutation.mutate({ 
+                transcript: aiInput, 
+                title: noteTitle || "Untitled Note", 
+                category: noteCategory 
+              })}
               disabled={generateNotesMutation.isPending || !aiInput.trim()}
               data-testid="button-generate-notes"
             >

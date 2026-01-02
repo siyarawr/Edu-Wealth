@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Wallet,
   Calendar,
+  CalendarDays,
   GraduationCap,
   Briefcase,
   Lightbulb,
@@ -11,7 +12,9 @@ import {
   BookOpen,
   ChevronRight,
   Search,
-  Sparkles
+  Sparkles,
+  User,
+  Settings
 } from "lucide-react";
 import {
   Sidebar,
@@ -34,6 +37,8 @@ import { cn } from "@/lib/utils";
 
 const workspaceItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Calendar", url: "/calendar", icon: CalendarDays },
+  { title: "My Profile", url: "/profile", icon: User },
 ];
 
 const financeItems = [

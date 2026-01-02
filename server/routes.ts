@@ -12,6 +12,34 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // ============ USER PROFILE ============
+  app.get("/api/user/profile", async (req, res) => {
+    try {
+      const userId = (req.query.userId as string) || "default-user";
+      let user = await storage.getUser(userId);
+      if (!user) {
+        user = await storage.createUser({ username: userId, password: "temp" });
+      }
+      res.json(user);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch profile" });
+    }
+  });
+
+  app.patch("/api/user/profile", async (req, res) => {
+    try {
+      const userId = (req.query.userId as string) || "default-user";
+      let user = await storage.getUser(userId);
+      if (!user) {
+        user = await storage.createUser({ username: userId, password: "temp" });
+      }
+      const updated = await storage.updateUserProfile(user.id, req.body);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
   // ============ EXPENSES ============
   app.get("/api/expenses", async (req, res) => {
     try {
@@ -32,6 +60,18 @@ export async function registerRoutes(
       res.status(201).json(expense);
     } catch (error) {
       res.status(500).json({ error: "Failed to create expense" });
+    }
+  });
+
+  app.patch("/api/expenses/:id", async (req, res) => {
+    try {
+      const expense = await storage.updateExpense(parseInt(req.params.id), req.body);
+      if (!expense) {
+        return res.status(404).json({ error: "Expense not found" });
+      }
+      res.json(expense);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update expense" });
     }
   });
 
@@ -131,7 +171,8 @@ export async function registerRoutes(
   // ============ SEMINARS ============
   app.get("/api/seminars", async (req, res) => {
     try {
-      const seminars = await storage.getSeminars();
+      const isOnline = req.query.online === "true" ? true : req.query.online === "false" ? false : undefined;
+      const seminars = await storage.getSeminars(isOnline);
       res.json(seminars);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch seminars" });
@@ -173,6 +214,18 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/notes/:id", async (req, res) => {
+    try {
+      const note = await storage.updateSeminarNote(parseInt(req.params.id), req.body);
+      if (!note) {
+        return res.status(404).json({ error: "Note not found" });
+      }
+      res.json(note);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update note" });
+    }
+  });
+
   app.delete("/api/notes/:id", async (req, res) => {
     try {
       await storage.deleteSeminarNote(parseInt(req.params.id));
@@ -185,7 +238,7 @@ export async function registerRoutes(
   // ============ AI NOTE GENERATION ============
   app.post("/api/notes/generate", async (req, res) => {
     try {
-      const { transcript, seminarId } = req.body;
+      const { transcript, seminarId, title, category } = req.body;
 
       if (!transcript) {
         return res.status(400).json({ error: "Transcript is required" });
@@ -225,8 +278,10 @@ Format your response as JSON with this structure:
       const parsed = JSON.parse(content);
       
       const note = await storage.createSeminarNote({
-        seminarId: seminarId || 0,
+        seminarId: seminarId || null,
         userId: req.body.userId || "default-user",
+        title: title || "Untitled Note",
+        category: category || "General",
         content: parsed.summary,
         keyPoints: JSON.stringify(parsed.keyPoints),
         actionItems: JSON.stringify(parsed.actionItems),
@@ -240,6 +295,52 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error generating notes:", error);
       res.status(500).json({ error: "Failed to generate notes" });
+    }
+  });
+
+  // ============ CALENDAR EVENTS ============
+  app.get("/api/calendar", async (req, res) => {
+    try {
+      const userId = (req.query.userId as string) || "default-user";
+      const startDate = req.query.start ? new Date(req.query.start as string) : undefined;
+      const endDate = req.query.end ? new Date(req.query.end as string) : undefined;
+      const events = await storage.getCalendarEvents(userId, startDate, endDate);
+      res.json(events);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch calendar events" });
+    }
+  });
+
+  app.post("/api/calendar", async (req, res) => {
+    try {
+      const event = await storage.createCalendarEvent({
+        ...req.body,
+        userId: req.body.userId || "default-user",
+      });
+      res.status(201).json(event);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create calendar event" });
+    }
+  });
+
+  app.patch("/api/calendar/:id", async (req, res) => {
+    try {
+      const event = await storage.updateCalendarEvent(parseInt(req.params.id), req.body);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      res.json(event);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update calendar event" });
+    }
+  });
+
+  app.delete("/api/calendar/:id", async (req, res) => {
+    try {
+      await storage.deleteCalendarEvent(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete calendar event" });
     }
   });
 
@@ -312,6 +413,7 @@ Format your response as JSON with this structure:
       const seminars = await storage.getSeminars();
       const internships = await storage.getInternships();
       const scholarships = await storage.getScholarships();
+      const user = await storage.getUser(userId);
 
       const now = new Date();
       const thisMonth = expenses.filter((e) => {
@@ -321,6 +423,11 @@ Format your response as JSON with this structure:
 
       const totalSpent = thisMonth.reduce((sum, e) => sum + e.amount, 0);
       const upcomingSeminars = seminars.filter((s) => new Date(s.date) > now).slice(0, 5);
+      
+      const monthlyBudget = user?.monthlyBudget || 0;
+      const monthlyIncome = user?.monthlyIncome || 0;
+      const remaining = monthlyBudget - totalSpent;
+      const savingsRate = monthlyIncome > 0 ? ((monthlyIncome - totalSpent) / monthlyIncome) * 100 : 0;
 
       res.json({
         totalSpent,
@@ -329,6 +436,11 @@ Format your response as JSON with this structure:
         internshipCount: internships.length,
         scholarshipCount: scholarships.length,
         upcomingSeminars,
+        monthlyBudget,
+        monthlyIncome,
+        remaining,
+        savingsRate: Math.round(savingsRate * 10) / 10,
+        hasProfile: user?.isOnboardingComplete || false,
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch dashboard stats" });

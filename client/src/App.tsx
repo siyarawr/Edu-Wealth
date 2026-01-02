@@ -17,6 +17,8 @@ import AcceptanceCalculator from "@/pages/acceptance";
 import Entrepreneurship from "@/pages/entrepreneurship";
 import Seminars from "@/pages/seminars";
 import Notes from "@/pages/notes";
+import Profile from "@/pages/profile";
+import Calendar from "@/pages/calendar";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -30,6 +32,8 @@ function Router() {
       <Route path="/entrepreneurship" component={Entrepreneurship} />
       <Route path="/seminars" component={Seminars} />
       <Route path="/notes" component={Notes} />
+      <Route path="/profile" component={Profile} />
+      <Route path="/calendar" component={Calendar} />
       <Route component={NotFound} />
     </Switch>
   );

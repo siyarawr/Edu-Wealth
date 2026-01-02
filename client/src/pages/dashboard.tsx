@@ -17,7 +17,9 @@ import {
   GraduationCap,
   Clock,
   MapPin,
-  Users
+  Users,
+  User,
+  AlertCircle
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -53,6 +55,11 @@ interface DashboardStats {
   internshipCount: number;
   scholarshipCount: number;
   upcomingSeminars: Seminar[];
+  monthlyBudget: number;
+  monthlyIncome: number;
+  remaining: number;
+  savingsRate: number;
+  hasProfile: boolean;
 }
 
 export default function Dashboard() {
@@ -64,11 +71,14 @@ export default function Dashboard() {
     queryKey: ["/api/internships"],
   });
 
-  const totalSpent = stats?.totalSpent || 1350;
-  const budgetLimit = 2000;
-  const budgetRemaining = budgetLimit - totalSpent;
-  const avgDaily = Math.round(totalSpent / 30);
-  const savingsProgress = Math.round((budgetRemaining / budgetLimit) * 100);
+  const totalSpent = stats?.totalSpent || 0;
+  const budgetLimit = stats?.monthlyBudget || 0;
+  const monthlyIncome = stats?.monthlyIncome || 0;
+  const budgetRemaining = stats?.remaining || 0;
+  const avgDaily = budgetLimit > 0 ? Math.round(totalSpent / 30) : 0;
+  const savingsProgress = budgetLimit > 0 ? Math.round((budgetRemaining / budgetLimit) * 100) : 0;
+  const savingsRate = stats?.savingsRate || 0;
+  const hasProfile = stats?.hasProfile || false;
 
   const upcomingSeminars = stats?.upcomingSeminars?.slice(0, 3) || [];
   const recentInternships = internships.slice(0, 3);
@@ -109,6 +119,22 @@ export default function Dashboard() {
         <h1 className="text-4xl font-bold">Dashboard</h1>
         <p className="text-muted-foreground mt-1">Welcome back. Here's your financial overview.</p>
       </div>
+
+      {!hasProfile && (
+        <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-4">
+          <AlertCircle className="h-5 w-5 text-primary flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium text-sm">Complete your profile</p>
+            <p className="text-sm text-muted-foreground">Set up your budget and preferences for personalized recommendations</p>
+          </div>
+          <Button size="sm" asChild>
+            <Link href="/profile">
+              <User className="h-4 w-4 mr-2" />
+              Set Up Profile
+            </Link>
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-card hover-elevate">

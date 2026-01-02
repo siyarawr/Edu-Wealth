@@ -1,5 +1,5 @@
 import {
-  type User, type InsertUser,
+  type User, type InsertUser, type UpdateUserProfile,
   type Expense, type InsertExpense,
   type Budget, type InsertBudget,
   type Internship, type InsertInternship,
@@ -7,18 +7,21 @@ import {
   type Seminar, type InsertSeminar,
   type SeminarNote, type InsertSeminarNote,
   type EntrepreneurContent, type InsertEntrepreneurContent,
-  users, expenses, budgets, internships, scholarships, seminars, seminarNotes, entrepreneurContent,
+  type CalendarEvent, type InsertCalendarEvent,
+  users, expenses, budgets, internships, scholarships, seminars, seminarNotes, entrepreneurContent, calendarEvents,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or } from "drizzle-orm";
+import { eq, desc, and, or, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserProfile(id: string, profile: Partial<UpdateUserProfile>): Promise<User | undefined>;
   getExpenses(userId: string): Promise<Expense[]>;
   getExpense(id: number): Promise<Expense | undefined>;
   createExpense(expense: InsertExpense): Promise<Expense>;
+  updateExpense(id: number, expense: Partial<InsertExpense>): Promise<Expense | undefined>;
   deleteExpense(id: number): Promise<void>;
   getBudgets(userId: string, month: string): Promise<Budget[]>;
   createBudget(budget: InsertBudget): Promise<Budget>;
@@ -29,15 +32,21 @@ export interface IStorage {
   getScholarships(country?: string): Promise<Scholarship[]>;
   getScholarship(id: number): Promise<Scholarship | undefined>;
   createScholarship(scholarship: InsertScholarship): Promise<Scholarship>;
-  getSeminars(): Promise<Seminar[]>;
+  getSeminars(isOnline?: boolean): Promise<Seminar[]>;
   getSeminar(id: number): Promise<Seminar | undefined>;
   createSeminar(seminar: InsertSeminar): Promise<Seminar>;
   getSeminarNotes(userId: string): Promise<SeminarNote[]>;
   getSeminarNote(id: number): Promise<SeminarNote | undefined>;
   createSeminarNote(note: InsertSeminarNote): Promise<SeminarNote>;
+  updateSeminarNote(id: number, note: Partial<InsertSeminarNote>): Promise<SeminarNote | undefined>;
   deleteSeminarNote(id: number): Promise<void>;
   getEntrepreneurContent(type?: string): Promise<EntrepreneurContent[]>;
   createEntrepreneurContent(content: InsertEntrepreneurContent): Promise<EntrepreneurContent>;
+  getCalendarEvents(userId: string, startDate?: Date, endDate?: Date): Promise<CalendarEvent[]>;
+  getCalendarEvent(id: number): Promise<CalendarEvent | undefined>;
+  createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent>;
+  updateCalendarEvent(id: number, event: Partial<InsertCalendarEvent>): Promise<CalendarEvent | undefined>;
+  deleteCalendarEvent(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -56,6 +65,11 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  async updateUserProfile(id: string, profile: Partial<UpdateUserProfile>): Promise<User | undefined> {
+    const [updated] = await db.update(users).set(profile).where(eq(users.id, id)).returning();
+    return updated || undefined;
+  }
+
   async getExpenses(userId: string): Promise<Expense[]> {
     return db.select().from(expenses).where(eq(expenses.userId, userId)).orderBy(desc(expenses.date));
   }
@@ -68,6 +82,11 @@ export class DatabaseStorage implements IStorage {
   async createExpense(expense: InsertExpense): Promise<Expense> {
     const [newExpense] = await db.insert(expenses).values(expense).returning();
     return newExpense;
+  }
+
+  async updateExpense(id: number, expense: Partial<InsertExpense>): Promise<Expense | undefined> {
+    const [updated] = await db.update(expenses).set(expense).where(eq(expenses.id, id)).returning();
+    return updated || undefined;
   }
 
   async deleteExpense(id: number): Promise<void> {
@@ -121,7 +140,10 @@ export class DatabaseStorage implements IStorage {
     return newScholarship;
   }
 
-  async getSeminars(): Promise<Seminar[]> {
+  async getSeminars(isOnline?: boolean): Promise<Seminar[]> {
+    if (isOnline !== undefined) {
+      return db.select().from(seminars).where(eq(seminars.isOnline, isOnline)).orderBy(seminars.date);
+    }
     return db.select().from(seminars).orderBy(seminars.date);
   }
 
@@ -149,6 +171,11 @@ export class DatabaseStorage implements IStorage {
     return newNote;
   }
 
+  async updateSeminarNote(id: number, note: Partial<InsertSeminarNote>): Promise<SeminarNote | undefined> {
+    const [updated] = await db.update(seminarNotes).set(note).where(eq(seminarNotes.id, id)).returning();
+    return updated || undefined;
+  }
+
   async deleteSeminarNote(id: number): Promise<void> {
     await db.delete(seminarNotes).where(eq(seminarNotes.id, id));
   }
@@ -163,6 +190,38 @@ export class DatabaseStorage implements IStorage {
   async createEntrepreneurContent(content: InsertEntrepreneurContent): Promise<EntrepreneurContent> {
     const [newContent] = await db.insert(entrepreneurContent).values(content).returning();
     return newContent;
+  }
+
+  async getCalendarEvents(userId: string, startDate?: Date, endDate?: Date): Promise<CalendarEvent[]> {
+    if (startDate && endDate) {
+      return db.select().from(calendarEvents).where(
+        and(
+          eq(calendarEvents.userId, userId),
+          gte(calendarEvents.date, startDate),
+          lte(calendarEvents.date, endDate)
+        )
+      ).orderBy(calendarEvents.date);
+    }
+    return db.select().from(calendarEvents).where(eq(calendarEvents.userId, userId)).orderBy(calendarEvents.date);
+  }
+
+  async getCalendarEvent(id: number): Promise<CalendarEvent | undefined> {
+    const [event] = await db.select().from(calendarEvents).where(eq(calendarEvents.id, id));
+    return event || undefined;
+  }
+
+  async createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent> {
+    const [newEvent] = await db.insert(calendarEvents).values(event).returning();
+    return newEvent;
+  }
+
+  async updateCalendarEvent(id: number, event: Partial<InsertCalendarEvent>): Promise<CalendarEvent | undefined> {
+    const [updated] = await db.update(calendarEvents).set(event).where(eq(calendarEvents.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteCalendarEvent(id: number): Promise<void> {
+    await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
   }
 }
 
