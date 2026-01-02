@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -43,9 +44,52 @@ function Router() {
   );
 }
 
+const SIDEBAR_WIDTH_KEY = "studenthub-sidebar-width";
+const DEFAULT_SIDEBAR_WIDTH = 240;
+const MIN_SIDEBAR_WIDTH = 180;
+const MAX_SIDEBAR_WIDTH = 400;
+
 function App() {
+  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+      if (stored) {
+        setSidebarWidth(parseInt(stored, 10));
+      }
+    }
+  }, []);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const handleMouseDown = useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+    const newWidth = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, e.clientX));
+    setSidebarWidth(newWidth);
+    localStorage.setItem(SIDEBAR_WIDTH_KEY, String(newWidth));
+  }, [isResizing]);
+
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing, handleMouseMove, handleMouseUp]);
+
   const style = {
-    "--sidebar-width": "15rem",
+    "--sidebar-width": `${sidebarWidth}px`,
     "--sidebar-width-icon": "3rem",
   };
 
@@ -56,6 +100,11 @@ function App() {
           <SidebarProvider style={style as React.CSSProperties}>
             <div className="flex h-screen w-full bg-background">
               <AppSidebar />
+              <div
+                className="w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
+                onMouseDown={handleMouseDown}
+                data-testid="sidebar-resize-handle"
+              />
               <div className="flex flex-col flex-1 overflow-hidden">
                 <header className="flex items-center justify-between gap-4 px-4 h-12 border-b border-border/50 bg-background sticky top-0 z-50">
                   <SidebarTrigger data-testid="button-sidebar-toggle" />
