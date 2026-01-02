@@ -409,6 +409,68 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ============ SEARCH ============
+  app.get("/api/search", async (req, res) => {
+    try {
+      const query = (req.query.q as string) || "";
+      if (!query || query.length < 2) {
+        return res.json({
+          seminars: [],
+          seminarNotes: [],
+          meetingNotes: [],
+          scholarships: [],
+          internships: [],
+        });
+      }
+
+      const searchLower = query.toLowerCase();
+
+      const seminars = await storage.getSeminars();
+      const matchedSeminars = seminars.filter(s => 
+        s.title.toLowerCase().includes(searchLower) ||
+        s.description?.toLowerCase().includes(searchLower) ||
+        s.speaker?.toLowerCase().includes(searchLower)
+      ).slice(0, 10);
+
+      const userId = (req.query.userId as string) || "default-user";
+      
+      const meetingNotes = await storage.getMeetingNotes(userId);
+      const matchedMeetingNotes = meetingNotes.filter(n =>
+        n.title.toLowerCase().includes(searchLower) ||
+        n.summary?.toLowerCase().includes(searchLower) ||
+        n.notes?.toLowerCase().includes(searchLower)
+      ).slice(0, 10);
+
+      const scholarships = await storage.getScholarships();
+      const matchedScholarships = scholarships.filter(s =>
+        s.name.toLowerCase().includes(searchLower) ||
+        s.description?.toLowerCase().includes(searchLower)
+      ).slice(0, 10);
+
+      const internships = await storage.getInternships();
+      const matchedInternships = internships.filter(i =>
+        i.title.toLowerCase().includes(searchLower) ||
+        i.company.toLowerCase().includes(searchLower) ||
+        i.description?.toLowerCase().includes(searchLower)
+      ).slice(0, 10);
+
+      const allNotes = await storage.getSeminarNotes(userId);
+      const matchedSeminarNotes = allNotes.filter(n =>
+        n.content?.toLowerCase().includes(searchLower)
+      ).slice(0, 10);
+
+      res.json({
+        seminars: matchedSeminars,
+        seminarNotes: matchedSeminarNotes,
+        meetingNotes: matchedMeetingNotes,
+        scholarships: matchedScholarships,
+        internships: matchedInternships,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to search" });
+    }
+  });
+
   // ============ DASHBOARD STATS ============
   app.get("/api/dashboard/stats", async (req, res) => {
     try {

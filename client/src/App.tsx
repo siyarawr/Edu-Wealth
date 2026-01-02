@@ -24,6 +24,7 @@ import MeetingNotes from "@/pages/meeting-notes";
 import Chat from "@/pages/chat";
 import Profile from "@/pages/profile";
 import Calendar from "@/pages/calendar";
+import SearchPage from "@/pages/search";
 import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/chat" component={Chat} />
       <Route path="/profile" component={Profile} />
       <Route path="/calendar" component={Calendar} />
+      <Route path="/search" component={SearchPage} />
       <Route component={NotFound} />
     </Switch>
   );

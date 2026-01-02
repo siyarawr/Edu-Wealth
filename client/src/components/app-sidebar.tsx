@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Wallet,
@@ -14,10 +15,12 @@ import {
   Search,
   Sparkles,
   User,
-  Settings,
   MessageCircle,
-  FileText
+  FileText,
+  LogOut
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import type { User as UserType } from "@shared/schema";
 import {
   Sidebar,
   SidebarContent,
@@ -41,6 +44,7 @@ const workspaceItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Calendar", url: "/calendar", icon: CalendarDays },
   { title: "My Profile", url: "/profile", icon: User },
+  { title: "Search", url: "/search", icon: Search },
 ];
 
 const financeItems = [
@@ -110,6 +114,17 @@ function NavSection({ title, items, location, defaultOpen = true }: NavSectionPr
 
 export function AppSidebar() {
   const [location] = useLocation();
+  
+  const { data: user } = useQuery<UserType>({
+    queryKey: ["/api/user/profile"],
+  });
+
+  const handleSignOut = () => {
+    window.location.href = "/api/logout";
+  };
+
+  const displayName = user?.fullName || user?.username || "User";
+  const initials = displayName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
     <Sidebar>
@@ -174,12 +189,22 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="p-3 border-t border-sidebar-border">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSignOut}
+          className="w-full justify-start mb-2"
+          data-testid="button-sign-out"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign Out
+        </Button>
         <div className="flex items-center gap-2.5">
           <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-            S
+            {initials || "U"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Student</p>
+            <p className="text-sm font-medium truncate" data-testid="text-user-name">{displayName}</p>
             <p className="text-xs text-muted-foreground truncate">Free Plan</p>
           </div>
         </div>
