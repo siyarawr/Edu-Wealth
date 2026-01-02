@@ -146,8 +146,10 @@ export default function Chat() {
     });
   };
 
+  const currentUserId = user?.id?.toString() || user?.email || "";
+
   const getOtherParticipant = (conv: ConversationWithParticipants) => {
-    const other = conv.participants.find(p => p.userId !== "default-user");
+    const other = conv.participants.find(p => p.userId !== currentUserId && p.email !== user?.email);
     return other?.email || "New Chat";
   };
 
@@ -314,7 +316,7 @@ export default function Chat() {
             <ScrollArea className="flex-1 p-4">
               <div className="space-y-4">
                 {currentConversation?.messages?.map((message) => {
-                  const isOwnMessage = message.senderId === "default-user";
+                  const isOwnMessage = message.senderId === currentUserId || message.senderName === (user?.fullName || user?.username);
                   const replyMessage = message.replyToId ? getReplyMessage(message.replyToId) : null;
 
                   return (
