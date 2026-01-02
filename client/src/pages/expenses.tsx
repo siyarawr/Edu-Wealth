@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import {
   Plus,
   Search,
@@ -40,6 +55,7 @@ import {
   ResponsiveContainer,
   Tooltip
 } from "recharts";
+import type { Expense, Budget } from "@shared/schema";
 
 const categoryIcons: Record<string, React.ReactNode> = {
   Housing: <Home className="h-4 w-4" />,
@@ -59,45 +75,145 @@ const categories = [
   "Healthcare", "Utilities", "Clothing", "Personal", "Other"
 ];
 
-const mockExpenses = [
-  { id: 1, category: "Housing", amount: 800, description: "Monthly rent", date: "2026-01-01" },
-  { id: 2, category: "Food", amount: 45.50, description: "Grocery shopping", date: "2026-01-02" },
-  { id: 3, category: "Transportation", amount: 50, description: "Monthly bus pass", date: "2026-01-03" },
-  { id: 4, category: "Education", amount: 120, description: "Textbooks", date: "2026-01-05" },
-  { id: 5, category: "Entertainment", amount: 15, description: "Movie tickets", date: "2026-01-07" },
-  { id: 6, category: "Food", amount: 32, description: "Restaurant dinner", date: "2026-01-08" },
-  { id: 7, category: "Utilities", amount: 85, description: "Internet bill", date: "2026-01-10" },
-  { id: 8, category: "Healthcare", amount: 25, description: "Pharmacy", date: "2026-01-12" },
-];
-
-const pieData = [
-  { name: "Housing", value: 800, color: "hsl(var(--chart-1))" },
-  { name: "Food", value: 320, color: "hsl(var(--chart-2))" },
-  { name: "Transportation", value: 150, color: "hsl(var(--chart-3))" },
-  { name: "Education", value: 120, color: "hsl(var(--chart-4))" },
-  { name: "Other", value: 125, color: "hsl(var(--chart-5))" },
-];
-
-const budgetCategories = [
-  { name: "Housing", spent: 800, limit: 900 },
-  { name: "Food", spent: 320, limit: 400 },
-  { name: "Transportation", spent: 150, limit: 200 },
-  { name: "Education", spent: 120, limit: 150 },
-  { name: "Entertainment", spent: 80, limit: 100 },
-];
+const categoryColors: Record<string, string> = {
+  Housing: "hsl(var(--chart-1))",
+  Food: "hsl(var(--chart-2))",
+  Transportation: "hsl(var(--chart-3))",
+  Education: "hsl(var(--chart-4))",
+  Entertainment: "hsl(var(--chart-5))",
+  Healthcare: "hsl(var(--chart-1))",
+  Utilities: "hsl(var(--chart-2))",
+  Clothing: "hsl(var(--chart-3))",
+  Personal: "hsl(var(--chart-4))",
+  Other: "hsl(var(--chart-5))",
+};
 
 export default function Expenses() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newExpense, setNewExpense] = useState({
+    amount: "",
+    category: "",
+    description: "",
+    date: new Date().toISOString().split("T")[0],
+  });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const filteredExpenses = mockExpenses.filter((expense) => {
-    const matchesSearch = expense.description.toLowerCase().includes(searchQuery.toLowerCase());
+  const { data: expenses = [], isLoading: expensesLoading } = useQuery<Expense[]>({
+    queryKey: ["/api/expenses"],
+  });
+
+  const { data: budgets = [] } = useQuery<Budget[]>({
+    queryKey: ["/api/budgets"],
+  });
+
+  const addExpenseMutation = useMutation({
+    mutationFn: async (data: { amount: number; category: string; description: string; date: string }) => {
+      const response = await apiRequest("POST", "/api/expenses", {
+        ...data,
+        userId: "default-user",
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
+      setIsAddDialogOpen(false);
+      setNewExpense({ amount: "", category: "", description: "", date: new Date().toISOString().split("T")[0] });
+      toast({
+        title: "Expense added",
+        description: "Your expense has been recorded.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add expense.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteExpenseMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/expenses/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
+      toast({
+        title: "Expense deleted",
+        description: "The expense has been removed.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete expense.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddExpense = () => {
+    if (!newExpense.amount || !newExpense.category) {
+      toast({
+        title: "Missing fields",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    addExpenseMutation.mutate({
+      amount: parseFloat(newExpense.amount),
+      category: newExpense.category,
+      description: newExpense.description,
+      date: newExpense.date,
+    });
+  };
+
+  const filteredExpenses = expenses.filter((expense) => {
+    const matchesSearch = expense.description?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = filterCategory === "all" || expense.category === filterCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const totalSpent = mockExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const totalSpent = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0);
+
+  const pieData = Object.entries(
+    expenses.reduce((acc, exp) => {
+      acc[exp.category] = (acc[exp.category] || 0) + Number(exp.amount);
+      return acc;
+    }, {} as Record<string, number>)
+  ).map(([name, value]) => ({
+    name,
+    value,
+    color: categoryColors[name] || "hsl(var(--chart-5))",
+  }));
+
+  const budgetProgress = budgets.map((budget) => {
+    const spent = expenses
+      .filter((e) => e.category === budget.category)
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+    return {
+      name: budget.category,
+      spent,
+      limit: Number(budget.limit),
+    };
+  });
+
+  if (expensesLoading) {
+    return (
+      <div className="p-8 space-y-8 max-w-5xl mx-auto">
+        <Skeleton className="h-10 w-48" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-64 rounded-xl" />
+          <Skeleton className="h-64 rounded-xl lg:col-span-2" />
+        </div>
+        <Skeleton className="h-96 rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 space-y-8 max-w-5xl mx-auto">
@@ -120,11 +236,21 @@ export default function Expenses() {
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="amount">Amount</Label>
-                <Input id="amount" type="number" placeholder="0.00" data-testid="input-expense-amount" />
+                <Input 
+                  id="amount" 
+                  type="number" 
+                  placeholder="0.00" 
+                  value={newExpense.amount}
+                  onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                  data-testid="input-expense-amount" 
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select>
+                <Select 
+                  value={newExpense.category} 
+                  onValueChange={(value) => setNewExpense({ ...newExpense, category: value })}
+                >
                   <SelectTrigger data-testid="select-expense-category">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -142,14 +268,31 @@ export default function Expenses() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Input id="description" placeholder="What was this expense for?" data-testid="input-expense-description" />
+                <Input 
+                  id="description" 
+                  placeholder="What was this expense for?" 
+                  value={newExpense.description}
+                  onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                  data-testid="input-expense-description" 
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>
-                <Input id="date" type="date" data-testid="input-expense-date" />
+                <Input 
+                  id="date" 
+                  type="date" 
+                  value={newExpense.date}
+                  onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
+                  data-testid="input-expense-date" 
+                />
               </div>
-              <Button className="w-full" data-testid="button-save-expense">
-                Save Expense
+              <Button 
+                className="w-full" 
+                onClick={handleAddExpense}
+                disabled={addExpenseMutation.isPending}
+                data-testid="button-save-expense"
+              >
+                {addExpenseMutation.isPending ? "Saving..." : "Save Expense"}
               </Button>
             </div>
           </DialogContent>
@@ -203,8 +346,8 @@ export default function Expenses() {
         <div className="lg:col-span-2 p-6 rounded-xl bg-card">
           <h2 className="text-lg font-semibold mb-4">Budget Progress</h2>
           <div className="space-y-4">
-            {budgetCategories.map((category) => {
-              const percentage = (category.spent / category.limit) * 100;
+            {budgetProgress.length > 0 ? budgetProgress.map((category) => {
+              const percentage = category.limit > 0 ? (category.spent / category.limit) * 100 : 0;
               const isOverBudget = percentage > 100;
               return (
                 <div key={category.name} className="space-y-1.5">
@@ -215,7 +358,7 @@ export default function Expenses() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono text-muted-foreground">
-                        ${category.spent} / ${category.limit}
+                        ${category.spent.toFixed(2)} / ${category.limit.toFixed(2)}
                       </span>
                       {isOverBudget && (
                         <Badge variant="destructive" className="text-xs">Over</Badge>
@@ -228,7 +371,9 @@ export default function Expenses() {
                   />
                 </div>
               );
-            })}
+            }) : (
+              <p className="text-sm text-muted-foreground text-center py-4">No budgets set. Add budgets to track your spending.</p>
+            )}
           </div>
         </div>
       </div>
@@ -268,7 +413,7 @@ export default function Expenses() {
             <div className="col-span-3">Category</div>
             <div className="col-span-2 text-right">Amount</div>
           </div>
-          {filteredExpenses.map((expense) => (
+          {filteredExpenses.length > 0 ? filteredExpenses.map((expense) => (
             <div
               key={expense.id}
               className="grid grid-cols-12 gap-4 py-3 px-3 rounded-lg hover-elevate group items-center"
@@ -285,17 +430,43 @@ export default function Expenses() {
                 </Badge>
               </div>
               <div className="col-span-2 text-right font-mono font-medium flex items-center justify-end gap-2">
-                <span>${expense.amount.toFixed(2)}</span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                </Button>
+                <span>${Number(expense.amount).toFixed(2)}</span>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                      data-testid={`button-delete-expense-${expense.id}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Expense</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this expense? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteExpenseMutation.mutate(expense.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="py-8 text-center text-muted-foreground">
+              <p>No expenses recorded yet. Add your first expense above.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -39,6 +39,7 @@ import {
   Tag
 } from "lucide-react";
 import type { SeminarNote, Seminar } from "@shared/schema";
+import jsPDF from "jspdf";
 
 const noteCategories = ["General", "Career", "Technology", "Finance", "Personal Development", "Business"];
 
@@ -145,6 +146,109 @@ export default function Notes() {
       day: "numeric",
       year: "numeric"
     });
+  };
+
+  const downloadAsPdf = (note: NoteWithParsed) => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      const maxWidth = pageWidth - margin * 2;
+      const bottomMargin = pageHeight - 20;
+      let yPosition = 20;
+
+      const checkPageBreak = (neededSpace: number) => {
+        if (yPosition + neededSpace > bottomMargin) {
+          doc.addPage();
+          yPosition = 20;
+        }
+      };
+
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      const title = note.title || getSeminarTitle(note.seminarId);
+      doc.text(title, margin, yPosition);
+      yPosition += 10;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(128, 128, 128);
+      doc.text(formatDate(note.createdAt), margin, yPosition);
+      if (note.category) {
+        doc.text(`Category: ${note.category}`, pageWidth - margin - 40, yPosition);
+      }
+      yPosition += 15;
+      doc.setTextColor(0, 0, 0);
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Summary", margin, yPosition);
+      yPosition += 7;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      const summaryLines = doc.splitTextToSize(note.content, maxWidth);
+      summaryLines.forEach((line: string) => {
+        checkPageBreak(7);
+        doc.text(line, margin, yPosition);
+        yPosition += 6;
+      });
+      yPosition += 10;
+
+      if (note.parsedKeyPoints && note.parsedKeyPoints.length > 0) {
+        checkPageBreak(20);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Key Points", margin, yPosition);
+        yPosition += 7;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        note.parsedKeyPoints.forEach((point, idx) => {
+          const pointLines = doc.splitTextToSize(`${idx + 1}. ${point}`, maxWidth - 5);
+          pointLines.forEach((line: string) => {
+            checkPageBreak(7);
+            doc.text(line, margin + 5, yPosition);
+            yPosition += 6;
+          });
+          yPosition += 2;
+        });
+        yPosition += 7;
+      }
+
+      if (note.parsedActionItems && note.parsedActionItems.length > 0) {
+        checkPageBreak(20);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Action Items", margin, yPosition);
+        yPosition += 7;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        note.parsedActionItems.forEach((item) => {
+          const itemLines = doc.splitTextToSize(`- ${item}`, maxWidth - 5);
+          itemLines.forEach((line: string) => {
+            checkPageBreak(7);
+            doc.text(line, margin + 5, yPosition);
+            yPosition += 6;
+          });
+          yPosition += 2;
+        });
+      }
+
+      const fileName = `${(note.title || "notes").replace(/[^a-z0-9]/gi, "_")}_${formatDate(note.createdAt).replace(/[^a-z0-9]/gi, "_")}.pdf`;
+      doc.save(fileName);
+      
+      toast({
+        title: "PDF Downloaded",
+        description: `${fileName} has been saved.`,
+      });
+    } catch (error) {
+      console.error("PDF generation error:", error);
+      toast({
+        title: "Download Failed",
+        description: "Could not generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const upcomingSeminars = seminars.filter(s => new Date(s.date) > new Date()).slice(0, 3);
@@ -350,9 +454,9 @@ export default function Notes() {
                           )}
                           
                           <div className="flex gap-2 pt-4">
-                            <Button variant="outline" className="flex-1">
+                            <Button variant="outline" className="flex-1" onClick={() => downloadAsPdf(note)} data-testid={`button-download-note-${note.id}`}>
                               <Download className="h-4 w-4 mr-2" />
-                              Download
+                              Download PDF
                             </Button>
                             <Button
                               variant="outline"
