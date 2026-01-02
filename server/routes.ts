@@ -4,6 +4,12 @@ import { storage } from "./storage";
 import OpenAI from "openai";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { sendChatInviteEmail } from "./replit_integrations/resend";
+import multer from "multer";
+
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 }
+});
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -21,7 +27,10 @@ export async function registerRoutes(
   app.get("/api/user/profile", async (req, res) => {
     try {
       const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || (req.query.userId as string) || "default-user";
+      const userId = authUser?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       let user = await storage.getUser(userId);
       if (!user) {
         user = await storage.createUser({ username: userId, password: "temp" });
@@ -35,7 +44,10 @@ export async function registerRoutes(
   app.patch("/api/user/profile", async (req, res) => {
     try {
       const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || (req.query.userId as string) || "default-user";
+      const userId = authUser?.claims?.sub;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       let user = await storage.getUser(userId);
       if (!user) {
         user = await storage.createUser({ username: userId, password: "temp" });
@@ -50,7 +62,8 @@ export async function registerRoutes(
   // ============ EXPENSES ============
   app.get("/api/expenses", async (req, res) => {
     try {
-      const userId = (req.query.userId as string) || "default-user";
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || (req.query.userId as string) || "default-user";
       const expenses = await storage.getExpenses(userId);
       res.json(expenses);
     } catch (error) {
@@ -60,12 +73,16 @@ export async function registerRoutes(
 
   app.post("/api/expenses", async (req, res) => {
     try {
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || req.body.userId || "default-user";
       const expense = await storage.createExpense({
         ...req.body,
-        userId: req.body.userId || "default-user",
+        userId,
+        date: req.body.date ? new Date(req.body.date) : new Date(),
       });
       res.status(201).json(expense);
     } catch (error) {
+      console.error("Create expense error:", error);
       res.status(500).json({ error: "Failed to create expense" });
     }
   });
@@ -94,7 +111,8 @@ export async function registerRoutes(
   // ============ BUDGETS ============
   app.get("/api/budgets", async (req, res) => {
     try {
-      const userId = (req.query.userId as string) || "default-user";
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || "default-user";
       const month = (req.query.month as string) || new Date().toISOString().slice(0, 7);
       const budgets = await storage.getBudgets(userId, month);
       res.json(budgets);
@@ -105,9 +123,11 @@ export async function registerRoutes(
 
   app.post("/api/budgets", async (req, res) => {
     try {
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || "default-user";
       const budget = await storage.createBudget({
         ...req.body,
-        userId: req.body.userId || "default-user",
+        userId,
       });
       res.status(201).json(budget);
     } catch (error) {
@@ -201,7 +221,8 @@ export async function registerRoutes(
   // ============ SEMINAR NOTES ============
   app.get("/api/notes", async (req, res) => {
     try {
-      const userId = (req.query.userId as string) || "default-user";
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || "default-user";
       const notes = await storage.getSeminarNotes(userId);
       res.json(notes);
     } catch (error) {
@@ -211,9 +232,11 @@ export async function registerRoutes(
 
   app.post("/api/notes", async (req, res) => {
     try {
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || "default-user";
       const note = await storage.createSeminarNote({
         ...req.body,
-        userId: req.body.userId || "default-user",
+        userId,
       });
       res.status(201).json(note);
     } catch (error) {
@@ -245,6 +268,8 @@ export async function registerRoutes(
   // ============ AI NOTE GENERATION ============
   app.post("/api/notes/generate", async (req, res) => {
     try {
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || "default-user";
       const { transcript, seminarId, title, category } = req.body;
 
       if (!transcript) {
@@ -286,7 +311,7 @@ Format your response as JSON with this structure:
       
       const note = await storage.createSeminarNote({
         seminarId: seminarId || null,
-        userId: req.body.userId || "default-user",
+        userId,
         title: title || "Untitled Note",
         category: category || "General",
         content: parsed.summary,
@@ -305,10 +330,100 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ============ FILE UPLOAD FOR NOTES ============
+  app.post("/api/notes/upload", upload.single("file"), async (req, res) => {
+    try {
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || "default-user";
+      const file = req.file;
+      const { title, category } = req.body;
+
+      if (!file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      let extractedText = "";
+
+      if (file.mimetype === "application/pdf") {
+        try {
+          const pdfParse = (await import("pdf-parse")).default;
+          const pdfData = await pdfParse(file.buffer);
+          extractedText = pdfData.text;
+        } catch (pdfError) {
+          console.error("PDF parsing error:", pdfError);
+          return res.status(400).json({ error: "Could not parse PDF file" });
+        }
+      } else if (file.mimetype.startsWith("audio/")) {
+        return res.status(400).json({ 
+          error: "Audio transcription is not yet available. Please upload a PDF or paste the transcript text manually." 
+        });
+      } else {
+        return res.status(400).json({ error: "Unsupported file type. Please upload a PDF file." });
+      }
+
+      if (!extractedText.trim()) {
+        return res.status(400).json({ error: "Could not extract text from the PDF file" });
+      }
+
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are an expert note-taker. Given document content, extract:
+1. A concise summary (2-3 sentences)
+2. Key points (bullet points of main takeaways)
+3. Action items (tasks the reader should complete)
+
+Format your response as JSON with this structure:
+{
+  "summary": "...",
+  "keyPoints": ["point1", "point2", ...],
+  "actionItems": ["action1", "action2", ...]
+}`
+          },
+          {
+            role: "user",
+            content: extractedText.slice(0, 10000)
+          }
+        ],
+        response_format: { type: "json_object" },
+        max_completion_tokens: 1024,
+      });
+
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        return res.status(500).json({ error: "Failed to generate notes from file" });
+      }
+
+      const parsed = JSON.parse(content);
+      
+      const note = await storage.createSeminarNote({
+        seminarId: null,
+        userId,
+        title: title || file.originalname || "Untitled Note",
+        category: category || "General",
+        content: parsed.summary,
+        keyPoints: JSON.stringify(parsed.keyPoints),
+        actionItems: JSON.stringify(parsed.actionItems),
+      });
+
+      res.status(201).json({
+        ...note,
+        keyPoints: parsed.keyPoints,
+        actionItems: parsed.actionItems,
+      });
+    } catch (error) {
+      console.error("File upload error:", error);
+      res.status(500).json({ error: "Failed to process uploaded file" });
+    }
+  });
+
   // ============ CALENDAR EVENTS ============
   app.get("/api/calendar", async (req, res) => {
     try {
-      const userId = (req.query.userId as string) || "default-user";
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || "default-user";
       const startDate = req.query.start ? new Date(req.query.start as string) : undefined;
       const endDate = req.query.end ? new Date(req.query.end as string) : undefined;
       const events = await storage.getCalendarEvents(userId, startDate, endDate);
@@ -320,12 +435,16 @@ Format your response as JSON with this structure:
 
   app.post("/api/calendar", async (req, res) => {
     try {
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || req.body.userId || "default-user";
       const event = await storage.createCalendarEvent({
         ...req.body,
-        userId: req.body.userId || "default-user",
+        userId,
+        date: req.body.date ? new Date(req.body.date) : new Date(),
       });
       res.status(201).json(event);
     } catch (error) {
+      console.error("Create calendar event error:", error);
       res.status(500).json({ error: "Failed to create calendar event" });
     }
   });
@@ -519,7 +638,8 @@ Format your response as JSON with this structure:
   // ============ MEETING NOTES ============
   app.get("/api/meeting-notes", async (req, res) => {
     try {
-      const userId = (req.query.userId as string) || "default-user";
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || "default-user";
       const notes = await storage.getMeetingNotes(userId);
       res.json(notes);
     } catch (error) {
@@ -542,12 +662,16 @@ Format your response as JSON with this structure:
 
   app.post("/api/meeting-notes", async (req, res) => {
     try {
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || req.body.userId || "default-user";
       const note = await storage.createMeetingNote({
         ...req.body,
-        userId: req.body.userId || "default-user",
+        userId,
+        date: req.body.date ? new Date(req.body.date) : new Date(),
       });
       res.status(201).json(note);
     } catch (error) {
+      console.error("Create meeting note error:", error);
       res.status(500).json({ error: "Failed to create meeting note" });
     }
   });
@@ -602,7 +726,8 @@ Format your response as JSON with this structure:
   // ============ CHAT / CONVERSATIONS ============
   app.get("/api/conversations", async (req, res) => {
     try {
-      const userId = (req.query.userId as string) || "default-user";
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || (req.query.userId as string) || "default-user";
       const convos = await storage.getConversations(userId);
       const result = await Promise.all(convos.map(async (c) => {
         const participants = await storage.getConversationParticipants(c.id);
@@ -634,7 +759,8 @@ Format your response as JSON with this structure:
 
   app.post("/api/conversations", async (req, res) => {
     try {
-      const userId = req.body.userId || "default-user";
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || req.body.userId || "default-user";
       const conv = await storage.createConversation({ createdBy: userId });
       
       // Add creator as participant
@@ -684,10 +810,11 @@ Format your response as JSON with this structure:
 
   app.post("/api/conversations/:id/messages", async (req, res) => {
     try {
+      const authUser = req.user as any;
       const conversationId = parseInt(req.params.id);
       const message = await storage.createMessage({
         conversationId,
-        senderId: req.body.senderId || "default-user",
+        senderId: authUser?.claims?.sub || req.body.senderId || "default-user",
         senderName: req.body.senderName,
         content: req.body.content,
         replyToId: req.body.replyToId || null,

@@ -97,13 +97,24 @@ export default function Calendar() {
 
   const createMutation = useMutation({
     mutationFn: async (event: { title: string; type: string; date: Date }) => {
-      return apiRequest("POST", "/api/calendar", event);
+      await apiRequest("POST", "/api/calendar", {
+        ...event,
+        date: event.date.toISOString(),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/calendar"] });
       setIsAddDialogOpen(false);
       setNewEvent({ title: "", type: "task", date: new Date().toISOString().split("T")[0], time: "09:00" });
       toast({ title: "Event created" });
+    },
+    onError: (error) => {
+      console.error("Create event error:", error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to create event. Please try again.",
+        variant: "destructive" 
+      });
     },
   });
 

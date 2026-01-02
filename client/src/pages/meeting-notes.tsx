@@ -79,9 +79,9 @@ export default function MeetingNotes() {
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof newNote) => {
-      return apiRequest("POST", "/api/meeting-notes", {
+      await apiRequest("POST", "/api/meeting-notes", {
         ...data,
-        date: new Date(data.date),
+        date: new Date(data.date).toISOString(),
         lastUpdatedBy: user?.fullName || user?.username || "User",
       });
     },
@@ -100,6 +100,14 @@ export default function MeetingNotes() {
         notes: "",
       });
       toast({ title: "Meeting note created" });
+    },
+    onError: (error) => {
+      console.error("Create meeting note error:", error);
+      toast({ 
+        title: "Error", 
+        description: "Failed to create meeting note. Please try again.",
+        variant: "destructive" 
+      });
     },
   });
 

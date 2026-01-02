@@ -31,6 +31,10 @@ interface CalculatorInputs {
   essayQuality: number;
   recommendations: number;
   targetSchool: string;
+  languageTest: "ielts" | "toefl";
+  languageScore: number;
+  academicTest: "sat" | "gre" | "gmat";
+  academicScore: number;
 }
 
 const schools = [
@@ -54,13 +58,29 @@ function calculateAcceptanceRate(inputs: CalculatorInputs): number {
   let baseChance = school.baseRate;
   
   const gpaBonus = Math.max(0, (inputs.gpa - 3.5) * 20);
-  const satBonus = Math.max(0, (inputs.satScore - 1400) / 10);
+  
+  let languageBonus = 0;
+  if (inputs.languageTest === "ielts") {
+    languageBonus = Math.max(0, (inputs.languageScore - 6.5) * 5);
+  } else {
+    languageBonus = Math.max(0, (inputs.languageScore - 90) / 5);
+  }
+  
+  let academicBonus = 0;
+  if (inputs.academicTest === "sat") {
+    academicBonus = Math.max(0, (inputs.academicScore - 1400) / 10);
+  } else if (inputs.academicTest === "gre") {
+    academicBonus = Math.max(0, (inputs.academicScore - 315) / 2);
+  } else {
+    academicBonus = Math.max(0, (inputs.academicScore - 650) / 10);
+  }
+  
   const ecBonus = Math.min(inputs.ecCount * 2, 15);
   const leadershipBonus = Math.min(inputs.leadershipRoles * 3, 12);
   const essayBonus = (inputs.essayQuality / 10) * 8;
   const recsBonus = (inputs.recommendations / 10) * 5;
   
-  const totalBonus = (gpaBonus + satBonus + ecBonus + leadershipBonus + essayBonus + recsBonus) * school.weight;
+  const totalBonus = (gpaBonus + languageBonus + academicBonus + ecBonus + leadershipBonus + essayBonus + recsBonus) * school.weight;
   
   const finalRate = Math.min(95, baseChance + totalBonus);
   return Math.round(finalRate * 10) / 10;
@@ -75,6 +95,10 @@ export default function AcceptanceCalculator() {
     essayQuality: 7,
     recommendations: 8,
     targetSchool: "Other Top 50",
+    languageTest: "ielts",
+    languageScore: 7.0,
+    academicTest: "sat",
+    academicScore: 1450,
   });
 
   const [showResult, setShowResult] = useState(false);
@@ -145,18 +169,81 @@ export default function AcceptanceCalculator() {
               <div className="flex items-center justify-between">
                 <Label className="flex items-center gap-2 text-sm">
                   <Award className="h-4 w-4" />
-                  SAT Score
+                  Language Test
                 </Label>
-                <span className="text-sm font-mono font-medium text-primary">{inputs.satScore}</span>
               </div>
-              <Slider
-                value={[inputs.satScore]}
-                onValueChange={([value]) => setInputs({ ...inputs, satScore: value })}
-                min={1000}
-                max={1600}
-                step={10}
-                data-testid="slider-sat"
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <Select
+                  value={inputs.languageTest}
+                  onValueChange={(value: "ielts" | "toefl") => setInputs({ ...inputs, languageTest: value })}
+                >
+                  <SelectTrigger data-testid="select-language-test">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ielts">IELTS</SelectItem>
+                    <SelectItem value="toefl">TOEFL</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[inputs.languageScore]}
+                    onValueChange={([value]) => setInputs({ ...inputs, languageScore: value })}
+                    min={inputs.languageTest === "ielts" ? 4 : 60}
+                    max={inputs.languageTest === "ielts" ? 9 : 120}
+                    step={inputs.languageTest === "ielts" ? 0.5 : 1}
+                    data-testid="slider-language-score"
+                    className="flex-1"
+                  />
+                  <span className="text-sm font-mono font-medium text-primary w-12 text-right">
+                    {inputs.languageScore}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2 text-sm">
+                  <TrendingUp className="h-4 w-4" />
+                  Academic Test
+                </Label>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Select
+                  value={inputs.academicTest}
+                  onValueChange={(value: "sat" | "gre" | "gmat") => {
+                    let score = inputs.academicScore;
+                    if (value === "sat") score = 1450;
+                    else if (value === "gre") score = 320;
+                    else score = 700;
+                    setInputs({ ...inputs, academicTest: value, academicScore: score });
+                  }}
+                >
+                  <SelectTrigger data-testid="select-academic-test">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sat">SAT</SelectItem>
+                    <SelectItem value="gre">GRE</SelectItem>
+                    <SelectItem value="gmat">GMAT</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={[inputs.academicScore]}
+                    onValueChange={([value]) => setInputs({ ...inputs, academicScore: value })}
+                    min={inputs.academicTest === "sat" ? 1000 : inputs.academicTest === "gre" ? 260 : 400}
+                    max={inputs.academicTest === "sat" ? 1600 : inputs.academicTest === "gre" ? 340 : 800}
+                    step={inputs.academicTest === "sat" ? 10 : inputs.academicTest === "gre" ? 1 : 10}
+                    data-testid="slider-academic-score"
+                    className="flex-1"
+                  />
+                  <span className="text-sm font-mono font-medium text-primary w-12 text-right">
+                    {inputs.academicScore}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -262,9 +349,13 @@ export default function AcceptanceCalculator() {
                   <span className="text-muted-foreground">Your GPA</span>
                   <span className="font-mono">{inputs.gpa.toFixed(2)}</span>
                 </div>
+                <div className="flex items-center justify-between py-1.5 border-b border-border/50">
+                  <span className="text-muted-foreground">{inputs.languageTest.toUpperCase()}</span>
+                  <span className="font-mono">{inputs.languageScore}</span>
+                </div>
                 <div className="flex items-center justify-between py-1.5">
-                  <span className="text-muted-foreground">SAT Score</span>
-                  <span className="font-mono">{inputs.satScore}</span>
+                  <span className="text-muted-foreground">{inputs.academicTest.toUpperCase()}</span>
+                  <span className="font-mono">{inputs.academicScore}</span>
                 </div>
               </div>
               <div className="p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
