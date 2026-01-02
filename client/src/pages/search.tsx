@@ -12,9 +12,10 @@ import {
   BookOpen,
   GraduationCap,
   Briefcase,
+  Lightbulb,
   Loader2
 } from "lucide-react";
-import type { Seminar, SeminarNote, MeetingNote, Scholarship, Internship } from "@shared/schema";
+import type { Seminar, SeminarNote, MeetingNote, Scholarship, Internship, EntrepreneurContent } from "@shared/schema";
 
 interface SearchResults {
   seminars: Seminar[];
@@ -22,6 +23,7 @@ interface SearchResults {
   meetingNotes: MeetingNote[];
   scholarships: Scholarship[];
   internships: Internship[];
+  entrepreneurContent: EntrepreneurContent[];
 }
 
 export default function SearchPage() {
@@ -58,7 +60,8 @@ export default function SearchPage() {
     results.seminarNotes?.length > 0 ||
     results.meetingNotes?.length > 0 ||
     results.scholarships?.length > 0 ||
-    results.internships?.length > 0
+    results.internships?.length > 0 ||
+    results.entrepreneurContent?.length > 0
   );
 
   return (
@@ -217,6 +220,31 @@ export default function SearchPage() {
                         <h3 className="font-medium">{internship.title}</h3>
                         <p className="text-sm text-muted-foreground">{internship.company} - {internship.location}</p>
                         <p className="text-sm text-muted-foreground line-clamp-2">{internship.description}</p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {results?.entrepreneurContent && results.entrepreneurContent.length > 0 && (
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3">
+                <Lightbulb className="h-5 w-5 text-primary" />
+                Entrepreneurship Resources
+                <Badge variant="secondary">{results.entrepreneurContent.length}</Badge>
+              </h2>
+              <div className="space-y-2">
+                {results.entrepreneurContent.map((content) => (
+                  <Link key={content.id} href="/entrepreneurship">
+                    <Card className="hover-elevate cursor-pointer" data-testid={`search-result-entrepreneur-${content.id}`}>
+                      <CardContent className="p-4">
+                        <h3 className="font-medium">{content.title}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{content.content}</p>
+                        {content.category && (
+                          <Badge variant="outline" className="mt-2">{content.category}</Badge>
+                        )}
                       </CardContent>
                     </Card>
                   </Link>

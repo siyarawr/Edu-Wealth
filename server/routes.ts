@@ -542,6 +542,7 @@ Format your response as JSON with this structure:
           meetingNotes: [],
           scholarships: [],
           internships: [],
+          entrepreneurContent: [],
         });
       }
 
@@ -581,12 +582,20 @@ Format your response as JSON with this structure:
         n.content?.toLowerCase().includes(searchLower)
       ).slice(0, 10);
 
+      const entrepreneurContent = await storage.getEntrepreneurContent();
+      const matchedEntrepreneurContent = entrepreneurContent.filter(c =>
+        c.title.toLowerCase().includes(searchLower) ||
+        c.content?.toLowerCase().includes(searchLower) ||
+        c.category?.toLowerCase().includes(searchLower)
+      ).slice(0, 10);
+
       res.json({
         seminars: matchedSeminars,
         seminarNotes: matchedSeminarNotes,
         meetingNotes: matchedMeetingNotes,
         scholarships: matchedScholarships,
         internships: matchedInternships,
+        entrepreneurContent: matchedEntrepreneurContent,
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to search" });
