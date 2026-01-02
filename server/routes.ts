@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import OpenAI from "openai";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
-import { sendChatInviteEmail } from "./replit_integrations/resend";
 import multer from "multer";
 
 const upload = multer({ 
@@ -346,7 +345,8 @@ Format your response as JSON with this structure:
 
       if (file.mimetype === "application/pdf") {
         try {
-          const pdfParse = (await import("pdf-parse")).default;
+          const pdfParseModule = await import("pdf-parse");
+          const pdfParse = (pdfParseModule as any).default || pdfParseModule;
           const pdfData = await pdfParse(file.buffer);
           extractedText = pdfData.text;
         } catch (pdfError) {
@@ -628,7 +628,7 @@ Format your response as JSON with this structure:
         monthlyIncome,
         remaining,
         savingsRate: Math.round(savingsRate * 10) / 10,
-        hasProfile: user?.isOnboardingComplete || false,
+        hasProfile: !!(user?.isOnboardingComplete && user?.fullName && user?.email),
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch dashboard stats" });
@@ -774,37 +774,6 @@ Format your response as JSON with this structure:
       res.status(201).json(conv);
     } catch (error) {
       res.status(500).json({ error: "Failed to create conversation" });
-    }
-  });
-
-  app.post("/api/conversations/:id/invite", async (req, res) => {
-    try {
-      const conversationId = parseInt(req.params.id);
-      const { email } = req.body;
-      
-      const inviteToken = Math.random().toString(36).substring(2, 15);
-      
-      const participant = await storage.addConversationParticipant({
-        conversationId,
-        email,
-        inviteToken,
-        userId: null,
-      });
-      
-      const currentUser = await storage.getUser("default-user");
-      const inviterName = currentUser?.fullName || currentUser?.username || "A user";
-      const inviterEmail = currentUser?.email || "noreply@eduwealth.app";
-      
-      try {
-        await sendChatInviteEmail(email, inviterName, inviterEmail);
-        console.log(`Chat invite email sent to ${email}`);
-      } catch (emailError) {
-        console.error("Failed to send invite email:", emailError);
-      }
-      
-      res.status(201).json({ participant, inviteToken, emailSent: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to invite participant" });
     }
   });
 

@@ -62,7 +62,7 @@ const academicsItems = [
 ];
 
 const communicationItems = [
-  { title: "Messages", url: "/chat", icon: MessageCircle },
+  { title: "Lists", url: "/chat", icon: MessageCircle },
 ];
 
 interface NavSectionProps {

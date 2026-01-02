@@ -88,7 +88,14 @@ export default function Calendar() {
   const endOfWeek = displayDates[displayDates.length - 1];
 
   const { data: events = [] } = useQuery<CalendarEvent[]>({
-    queryKey: ["/api/calendar", startOfWeek.toISOString(), endOfWeek.toISOString()],
+    queryKey: ["/api/calendar", { start: startOfWeek.toISOString(), end: endOfWeek.toISOString() }],
+    queryFn: async () => {
+      const response = await fetch(`/api/calendar?start=${startOfWeek.toISOString()}&end=${endOfWeek.toISOString()}`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch events");
+      return response.json();
+    },
   });
 
   const { data: seminars = [] } = useQuery<Seminar[]>({
@@ -103,7 +110,7 @@ export default function Calendar() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/calendar"] });
+      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === "/api/calendar" });
       setIsAddDialogOpen(false);
       setNewEvent({ title: "", type: "task", date: new Date().toISOString().split("T")[0], time: "09:00" });
       toast({ title: "Event created" });
@@ -123,7 +130,7 @@ export default function Calendar() {
       return apiRequest("PATCH", `/api/calendar/${id}`, { isCompleted });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/calendar"] });
+      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === "/api/calendar" });
     },
   });
 
@@ -132,7 +139,7 @@ export default function Calendar() {
       return apiRequest("DELETE", `/api/calendar/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/calendar"] });
+      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === "/api/calendar" });
       toast({ title: "Event deleted" });
     },
   });

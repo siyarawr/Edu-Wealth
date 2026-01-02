@@ -31,7 +31,6 @@ import {
   Send,
   Heart,
   ThumbsUp,
-  Mail,
   MessageCircle,
   Reply,
   X,
@@ -52,9 +51,7 @@ export default function Chat() {
   const { toast } = useToast();
   const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+    const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: user } = useQuery<UserType>({
@@ -82,22 +79,11 @@ export default function Chat() {
       if (data && typeof data === 'object' && 'id' in data) {
         setSelectedConversation((data as { id: number }).id);
       }
-      toast({ title: "New conversation started" });
+      toast({ title: "New list created" });
     },
   });
 
-  const inviteMutation = useMutation({
-    mutationFn: async ({ conversationId, email }: { conversationId: number; email: string }) => {
-      return apiRequest("POST", `/api/conversations/${conversationId}/invite`, { email });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations", selectedConversation] });
-      setInviteEmail("");
-      setIsInviteDialogOpen(false);
-      toast({ title: "Invitation sent", description: "They will receive an email to join this chat." });
-    },
-  });
-
+  
   const sendMessageMutation = useMutation({
     mutationFn: async ({ conversationId, content, replyToId }: { conversationId: number; content: string; replyToId?: number }) => {
       return apiRequest("POST", `/api/conversations/${conversationId}/messages`, {
@@ -129,7 +115,7 @@ export default function Chat() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       setSelectedConversation(null);
-      toast({ title: "Chat deleted", description: "The conversation has been permanently deleted." });
+      toast({ title: "List deleted", description: "The list has been permanently deleted." });
     },
   });
 
@@ -148,9 +134,8 @@ export default function Chat() {
 
   const currentUserId = user?.id?.toString() || user?.email || "";
 
-  const getOtherParticipant = (conv: ConversationWithParticipants) => {
-    const other = conv.participants.find(p => p.userId !== currentUserId && p.email !== user?.email);
-    return other?.email || "New Chat";
+  const getListName = (conv: ConversationWithParticipants, index: number) => {
+    return `List ${index + 1}`;
   };
 
   const getReplyMessage = (replyToId: number) => {
@@ -160,8 +145,11 @@ export default function Chat() {
   return (
     <div className="flex h-[calc(100vh-4rem)]">
       <div className="w-80 border-r flex flex-col bg-sidebar">
-        <div className="p-4 border-b flex items-center justify-between gap-2">
-          <h2 className="font-semibold">Messages</h2>
+        <div className="p-4 border-b flex flex-col gap-1">
+          <h2 className="font-semibold">Lists</h2>
+          <p className="text-xs text-muted-foreground">Quick lists and messages to keep to yourself</p>
+        </div>
+        <div className="p-2 flex justify-end">
           <Button
             size="icon"
             variant="ghost"
@@ -176,11 +164,11 @@ export default function Chat() {
             {conversations.length === 0 ? (
               <div className="p-4 text-center text-muted-foreground text-sm">
                 <MessageCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No conversations yet</p>
-                <p className="text-xs mt-1">Start a new chat to message someone</p>
+                <p>No lists yet</p>
+                <p className="text-xs mt-1">Create a list to keep reminders for yourself</p>
               </div>
             ) : (
-              conversations.map((conv) => (
+              conversations.map((conv, index) => (
                 <button
                   key={conv.id}
                   onClick={() => setSelectedConversation(conv.id)}
@@ -192,14 +180,12 @@ export default function Chat() {
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
                       <AvatarFallback>
-                        {getOtherParticipant(conv).charAt(0).toUpperCase()}
+                        {(index + 1).toString()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{getOtherParticipant(conv)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {conv.participants.length} participant{conv.participants.length !== 1 ? "s" : ""}
-                      </p>
+                      <p className="font-medium truncate">{getListName(conv, index)}</p>
+                      <p className="text-xs text-muted-foreground">Self Reminders</p>
                     </div>
                   </div>
                 </button>
@@ -214,11 +200,11 @@ export default function Chat() {
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
             <div className="text-center">
               <MessageCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium mb-2">No conversation selected</h3>
-              <p className="text-sm mb-4">Choose a chat or start a new conversation</p>
+              <h3 className="text-lg font-medium mb-2">No list selected</h3>
+              <p className="text-sm mb-4">Choose a list or create a new one for your reminders</p>
               <Button onClick={() => createConversationMutation.mutate()}>
                 <Plus className="h-4 w-4 mr-2" />
-                Start New Chat
+                New List
               </Button>
             </div>
           </div>
@@ -232,66 +218,23 @@ export default function Chat() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-semibold">
-                    {currentConversation?.participants?.length === 1
-                      ? "Waiting for participant..."
-                      : currentConversation?.participants?.map(p => p.email).join(", ") || "Chat"}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {currentConversation?.participants?.length || 0} participant(s)
-                  </p>
+                  <h3 className="font-semibold">Self Reminders</h3>
+                  <p className="text-xs text-muted-foreground">Your personal notes and reminders</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" data-testid="button-invite-to-chat">
-                      <Mail className="h-4 w-4 mr-2" />
-                      Invite via Email
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Invite to Chat</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 pt-4">
-                      <p className="text-sm text-muted-foreground">
-                        Send an email invitation to start a secure 1-1 conversation.
-                      </p>
-                      <Input
-                        type="email"
-                        placeholder="colleague@email.com"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        data-testid="input-invite-email"
-                      />
-                      <Button
-                        onClick={() => {
-                          if (selectedConversation && inviteEmail) {
-                            inviteMutation.mutate({ conversationId: selectedConversation, email: inviteEmail });
-                          }
-                        }}
-                        disabled={!inviteEmail || inviteMutation.isPending}
-                        className="w-full"
-                        data-testid="button-send-chat-invite"
-                      >
-                        {inviteMutation.isPending ? "Sending..." : "Send Invitation"}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" data-testid="button-delete-chat">
+                    <Button variant="destructive" size="sm" data-testid="button-delete-list">
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Delete Chat
+                      Delete List
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the entire conversation including all messages, reactions, and shared content.
+                        This action cannot be undone. This will permanently delete this list including all your reminders.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -303,7 +246,7 @@ export default function Chat() {
                           }
                         }}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        data-testid="button-confirm-delete-chat"
+                        data-testid="button-confirm-delete-list"
                       >
                         Yes, Delete
                       </AlertDialogAction>
