@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,14 +27,21 @@ interface SearchResults {
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSearch = (value: string) => {
-    setSearchQuery(value);
-    const timer = setTimeout(() => {
-      setDebouncedQuery(value);
+  useEffect(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    timerRef.current = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
     }, 300);
-    return () => clearTimeout(timer);
-  };
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [searchQuery]);
 
   const { data: results, isLoading } = useQuery<SearchResults>({
     queryKey: ["/api/search", debouncedQuery],
@@ -67,7 +74,7 @@ export default function SearchPage() {
           type="search"
           placeholder="Search for seminars, meeting notes, scholarships..."
           value={searchQuery}
-          onChange={(e) => handleSearch(e.target.value)}
+          onChange={(e) => setSearchQuery(e.target.value)}
           className="h-12 pl-12 text-lg"
           autoFocus
           data-testid="input-global-search"

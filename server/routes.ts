@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import OpenAI from "openai";
 import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { sendChatInviteEmail } from "./replit_integrations/resend";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -426,7 +427,7 @@ Format your response as JSON with this structure:
       const searchLower = query.toLowerCase();
 
       const seminars = await storage.getSeminars();
-      const matchedSeminars = seminars.filter(s => 
+      const matchedSeminars = (seminars || []).filter(s => 
         s.title.toLowerCase().includes(searchLower) ||
         s.description?.toLowerCase().includes(searchLower) ||
         s.speaker?.toLowerCase().includes(searchLower)
@@ -651,9 +652,8 @@ Format your response as JSON with this structure:
   app.post("/api/conversations/:id/invite", async (req, res) => {
     try {
       const conversationId = parseInt(req.params.id);
-      const { email, invitedBy } = req.body;
+      const { email } = req.body;
       
-      // Generate invite token
       const inviteToken = Math.random().toString(36).substring(2, 15);
       
       const participant = await storage.addConversationParticipant({
@@ -663,7 +663,18 @@ Format your response as JSON with this structure:
         userId: null,
       });
       
-      res.status(201).json({ participant, inviteToken });
+      const currentUser = await storage.getUser("default-user");
+      const inviterName = currentUser?.fullName || currentUser?.username || "A user";
+      const inviterEmail = currentUser?.email || "noreply@eduwealth.app";
+      
+      try {
+        await sendChatInviteEmail(email, inviterName, inviterEmail);
+        console.log(`Chat invite email sent to ${email}`);
+      } catch (emailError) {
+        console.error("Failed to send invite email:", emailError);
+      }
+      
+      res.status(201).json({ participant, inviteToken, emailSent: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to invite participant" });
     }
