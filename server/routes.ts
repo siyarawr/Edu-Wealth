@@ -892,12 +892,18 @@ Format your response as JSON with this structure:
       return res.status(401).json({ error: "Not authenticated" });
     }
     try {
+      const { type, source, amount, tag, date } = req.body;
       const entry = await storage.createFinanceEntry({
-        ...req.body,
         userId: authUser.claims.sub,
+        type,
+        source,
+        amount: parseFloat(amount),
+        tag,
+        date: new Date(date),
       });
       res.status(201).json(entry);
     } catch (error) {
+      console.error("Failed to create finance entry:", error);
       res.status(500).json({ error: "Failed to create finance entry" });
     }
   });
@@ -908,12 +914,19 @@ Format your response as JSON with this structure:
       return res.status(401).json({ error: "Not authenticated" });
     }
     try {
-      const entry = await storage.updateFinanceEntry(parseInt(req.params.id), req.body);
+      const updateData: any = {};
+      if (req.body.source !== undefined) updateData.source = req.body.source;
+      if (req.body.amount !== undefined) updateData.amount = parseFloat(req.body.amount);
+      if (req.body.tag !== undefined) updateData.tag = req.body.tag;
+      if (req.body.date !== undefined) updateData.date = new Date(req.body.date);
+      
+      const entry = await storage.updateFinanceEntry(parseInt(req.params.id), updateData);
       if (!entry) {
         return res.status(404).json({ error: "Entry not found" });
       }
       res.json(entry);
     } catch (error) {
+      console.error("Failed to update finance entry:", error);
       res.status(500).json({ error: "Failed to update finance entry" });
     }
   });
