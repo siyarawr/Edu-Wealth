@@ -8,7 +8,14 @@ import {
   type SeminarNote, type InsertSeminarNote,
   type EntrepreneurContent, type InsertEntrepreneurContent,
   type CalendarEvent, type InsertCalendarEvent,
+  type MeetingNote, type InsertMeetingNote,
+  type MeetingNoteShare, type InsertMeetingNoteShare,
+  type Conversation, type InsertConversation,
+  type ConversationParticipant, type InsertConversationParticipant,
+  type Message, type InsertMessage,
+  type MessageReaction, type InsertMessageReaction,
   users, expenses, budgets, internships, scholarships, seminars, seminarNotes, entrepreneurContent, calendarEvents,
+  meetingNotes, meetingNoteShares, conversations, conversationParticipants, messages, messageReactions,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, gte, lte } from "drizzle-orm";
@@ -47,6 +54,26 @@ export interface IStorage {
   createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent>;
   updateCalendarEvent(id: number, event: Partial<InsertCalendarEvent>): Promise<CalendarEvent | undefined>;
   deleteCalendarEvent(id: number): Promise<void>;
+  getMeetingNotes(userId: string): Promise<MeetingNote[]>;
+  getMeetingNote(id: number): Promise<MeetingNote | undefined>;
+  createMeetingNote(note: InsertMeetingNote): Promise<MeetingNote>;
+  updateMeetingNote(id: number, note: Partial<InsertMeetingNote>): Promise<MeetingNote | undefined>;
+  deleteMeetingNote(id: number): Promise<void>;
+  getMeetingNoteShares(noteId: number): Promise<MeetingNoteShare[]>;
+  createMeetingNoteShare(share: InsertMeetingNoteShare): Promise<MeetingNoteShare>;
+  deleteMeetingNoteShare(id: number): Promise<void>;
+  getConversations(userId: string): Promise<Conversation[]>;
+  getConversation(id: number): Promise<Conversation | undefined>;
+  createConversation(conversation: InsertConversation): Promise<Conversation>;
+  getConversationParticipants(conversationId: number): Promise<ConversationParticipant[]>;
+  addConversationParticipant(participant: InsertConversationParticipant): Promise<ConversationParticipant>;
+  getMessages(conversationId: number): Promise<Message[]>;
+  getMessage(id: number): Promise<Message | undefined>;
+  createMessage(message: InsertMessage): Promise<Message>;
+  updateMessage(id: number, content: string): Promise<Message | undefined>;
+  getMessageReactions(messageId: number): Promise<MessageReaction[]>;
+  addMessageReaction(reaction: InsertMessageReaction): Promise<MessageReaction>;
+  removeMessageReaction(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -222,6 +249,107 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCalendarEvent(id: number): Promise<void> {
     await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
+  }
+
+  async getMeetingNotes(userId: string): Promise<MeetingNote[]> {
+    return db.select().from(meetingNotes).where(eq(meetingNotes.userId, userId)).orderBy(desc(meetingNotes.createdAt));
+  }
+
+  async getMeetingNote(id: number): Promise<MeetingNote | undefined> {
+    const [note] = await db.select().from(meetingNotes).where(eq(meetingNotes.id, id));
+    return note || undefined;
+  }
+
+  async createMeetingNote(note: InsertMeetingNote): Promise<MeetingNote> {
+    const [newNote] = await db.insert(meetingNotes).values(note).returning();
+    return newNote;
+  }
+
+  async updateMeetingNote(id: number, note: Partial<InsertMeetingNote>): Promise<MeetingNote | undefined> {
+    const [updated] = await db.update(meetingNotes).set({ ...note, updatedAt: new Date() }).where(eq(meetingNotes.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteMeetingNote(id: number): Promise<void> {
+    await db.delete(meetingNoteShares).where(eq(meetingNoteShares.noteId, id));
+    await db.delete(meetingNotes).where(eq(meetingNotes.id, id));
+  }
+
+  async getMeetingNoteShares(noteId: number): Promise<MeetingNoteShare[]> {
+    return db.select().from(meetingNoteShares).where(eq(meetingNoteShares.noteId, noteId));
+  }
+
+  async createMeetingNoteShare(share: InsertMeetingNoteShare): Promise<MeetingNoteShare> {
+    const [newShare] = await db.insert(meetingNoteShares).values(share).returning();
+    return newShare;
+  }
+
+  async deleteMeetingNoteShare(id: number): Promise<void> {
+    await db.delete(meetingNoteShares).where(eq(meetingNoteShares.id, id));
+  }
+
+  async getConversations(userId: string): Promise<Conversation[]> {
+    const participantConvos = await db.select({ conversationId: conversationParticipants.conversationId })
+      .from(conversationParticipants)
+      .where(eq(conversationParticipants.userId, userId));
+    
+    const convIds = participantConvos.map(p => p.conversationId);
+    if (convIds.length === 0) return [];
+    
+    return db.select().from(conversations).where(
+      or(...convIds.map(id => eq(conversations.id, id)))
+    ).orderBy(desc(conversations.createdAt));
+  }
+
+  async getConversation(id: number): Promise<Conversation | undefined> {
+    const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
+    return conv || undefined;
+  }
+
+  async createConversation(conversation: InsertConversation): Promise<Conversation> {
+    const [newConv] = await db.insert(conversations).values(conversation).returning();
+    return newConv;
+  }
+
+  async getConversationParticipants(conversationId: number): Promise<ConversationParticipant[]> {
+    return db.select().from(conversationParticipants).where(eq(conversationParticipants.conversationId, conversationId));
+  }
+
+  async addConversationParticipant(participant: InsertConversationParticipant): Promise<ConversationParticipant> {
+    const [newParticipant] = await db.insert(conversationParticipants).values(participant).returning();
+    return newParticipant;
+  }
+
+  async getMessages(conversationId: number): Promise<Message[]> {
+    return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.createdAt);
+  }
+
+  async getMessage(id: number): Promise<Message | undefined> {
+    const [msg] = await db.select().from(messages).where(eq(messages.id, id));
+    return msg || undefined;
+  }
+
+  async createMessage(message: InsertMessage): Promise<Message> {
+    const [newMsg] = await db.insert(messages).values(message).returning();
+    return newMsg;
+  }
+
+  async updateMessage(id: number, content: string): Promise<Message | undefined> {
+    const [updated] = await db.update(messages).set({ content, isEdited: true, updatedAt: new Date() }).where(eq(messages.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async getMessageReactions(messageId: number): Promise<MessageReaction[]> {
+    return db.select().from(messageReactions).where(eq(messageReactions.messageId, messageId));
+  }
+
+  async addMessageReaction(reaction: InsertMessageReaction): Promise<MessageReaction> {
+    const [newReaction] = await db.insert(messageReactions).values(reaction).returning();
+    return newReaction;
+  }
+
+  async removeMessageReaction(id: number): Promise<void> {
+    await db.delete(messageReactions).where(eq(messageReactions.id, id));
   }
 }
 

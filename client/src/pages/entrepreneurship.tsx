@@ -205,7 +205,16 @@ export default function Entrepreneurship() {
                   )}
                 </CardContent>
                 <div className="p-6 pt-0">
-                  <Button variant="outline" className="w-full" data-testid={`button-view-${item.id}`}>
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    data-testid={`button-view-${item.id}`}
+                    onClick={() => {
+                      if (item.externalUrl) {
+                        window.open(item.externalUrl, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                  >
                     {item.type === "Video" || item.type === "Course" ? "Watch Now" : 
                      item.type === "Podcast" ? "Listen Now" : "Read Now"}
                     <ExternalLink className="ml-2 h-4 w-4" />

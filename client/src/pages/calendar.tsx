@@ -74,6 +74,7 @@ export default function Calendar() {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [showSeminars, setShowSeminars] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [viewDays, setViewDays] = useState<4 | 7>(7);
   const [newEvent, setNewEvent] = useState({
     title: "",
     type: "task" as string,
@@ -82,8 +83,9 @@ export default function Calendar() {
   });
 
   const weekDates = getWeekDates(currentWeek);
-  const startOfWeek = weekDates[0];
-  const endOfWeek = weekDates[6];
+  const displayDates = viewDays === 4 ? weekDates.slice(0, 4) : weekDates;
+  const startOfWeek = displayDates[0];
+  const endOfWeek = displayDates[displayDates.length - 1];
 
   const { data: events = [] } = useQuery<CalendarEvent[]>({
     queryKey: ["/api/calendar", startOfWeek.toISOString(), endOfWeek.toISOString()],
@@ -249,7 +251,7 @@ export default function Calendar() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between p-4 rounded-xl bg-card">
+      <div className="flex items-center justify-between p-4 rounded-xl bg-card gap-4">
         <Button
           variant="ghost"
           size="icon"
@@ -261,10 +263,10 @@ export default function Calendar() {
         <div className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5 text-muted-foreground" />
           <span className="font-medium">
-            {weekDates[0].toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+            {displayDates[0].toLocaleDateString("en-US", { month: "long", year: "numeric" })}
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <Button
             variant="outline"
             size="sm"
@@ -273,6 +275,24 @@ export default function Calendar() {
           >
             Today
           </Button>
+          <div className="flex items-center gap-1 border rounded-md p-0.5">
+            <Button
+              size="sm"
+              variant={viewDays === 4 ? "secondary" : "ghost"}
+              onClick={() => setViewDays(4)}
+              data-testid="button-4day-view"
+            >
+              4 Days
+            </Button>
+            <Button
+              size="sm"
+              variant={viewDays === 7 ? "secondary" : "ghost"}
+              onClick={() => setViewDays(7)}
+              data-testid="button-7day-view"
+            >
+              7 Days
+            </Button>
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -284,15 +304,15 @@ export default function Calendar() {
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-3">
-        {weekDates.map((date) => {
+      <div className={`grid gap-3 ${viewDays === 4 ? "grid-cols-4" : "grid-cols-7"}`}>
+        {displayDates.map((date) => {
           const dayEvents = getEventsForDay(date);
           const isToday = isSameDay(date, today);
 
           return (
             <div
               key={date.toISOString()}
-              className={`min-h-[300px] rounded-xl p-3 ${isToday ? "bg-primary/5 ring-2 ring-primary/20" : "bg-card"}`}
+              className={`rounded-xl p-3 ${viewDays === 4 ? "min-h-[450px]" : "min-h-[350px]"} ${isToday ? "bg-primary/5 ring-2 ring-primary/20" : "bg-card"}`}
             >
               <div className={`text-center pb-2 mb-2 border-b ${isToday ? "border-primary/20" : "border-border/50"}`}>
                 <p className="text-xs text-muted-foreground uppercase">

@@ -8,6 +8,10 @@ export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  // Personal info
+  fullName: text("full_name"),
+  email: text("email"),
+  linkedinUrl: text("linkedin_url"),
   // Profile info
   country: text("country"),
   state: text("state"),
@@ -214,6 +218,122 @@ export const insertEntrepreneurContentSchema = createInsertSchema(entrepreneurCo
 
 export type InsertEntrepreneurContent = z.infer<typeof insertEntrepreneurContentSchema>;
 export type EntrepreneurContent = typeof entrepreneurContent.$inferSelect;
+
+// Meeting Notes with sharing permissions
+export const meetingNotes = pgTable("meeting_notes", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  title: text("title").notNull(),
+  date: timestamp("date").notNull(),
+  category: text("category").notNull(),
+  attendees: text("attendees"),
+  summary: text("summary"),
+  comments: text("comments"),
+  agenda: text("agenda"),
+  questions: text("questions"),
+  notes: text("notes"),
+  lastUpdatedBy: text("last_updated_by"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertMeetingNoteSchema = createInsertSchema(meetingNotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertMeetingNote = z.infer<typeof insertMeetingNoteSchema>;
+export type MeetingNote = typeof meetingNotes.$inferSelect;
+
+// Meeting Note Sharing Permissions
+export const meetingNoteShares = pgTable("meeting_note_shares", {
+  id: serial("id").primaryKey(),
+  noteId: integer("note_id").notNull(),
+  email: text("email").notNull(),
+  permission: text("permission").notNull(), // 'view', 'comment', 'edit'
+  invitedBy: varchar("invited_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertMeetingNoteShareSchema = createInsertSchema(meetingNoteShares).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertMeetingNoteShare = z.infer<typeof insertMeetingNoteShareSchema>;
+export type MeetingNoteShare = typeof meetingNoteShares.$inferSelect;
+
+// Chat Conversations
+export const conversations = pgTable("conversations", {
+  id: serial("id").primaryKey(),
+  createdBy: varchar("created_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertConversationSchema = createInsertSchema(conversations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+export type Conversation = typeof conversations.$inferSelect;
+
+// Conversation Participants
+export const conversationParticipants = pgTable("conversation_participants", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+  userId: varchar("user_id"),
+  email: text("email").notNull(),
+  inviteToken: text("invite_token"),
+  joinedAt: timestamp("joined_at"),
+  isActive: boolean("is_active").default(true),
+});
+
+export const insertConversationParticipantSchema = createInsertSchema(conversationParticipants).omit({
+  id: true,
+});
+
+export type InsertConversationParticipant = z.infer<typeof insertConversationParticipantSchema>;
+export type ConversationParticipant = typeof conversationParticipants.$inferSelect;
+
+// Chat Messages
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").notNull(),
+  senderId: varchar("sender_id").notNull(),
+  senderName: text("sender_name"),
+  content: text("content").notNull(),
+  replyToId: integer("reply_to_id"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at"),
+  isEdited: boolean("is_edited").default(false),
+});
+
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+export type Message = typeof messages.$inferSelect;
+
+// Message Reactions
+export const messageReactions = pgTable("message_reactions", {
+  id: serial("id").primaryKey(),
+  messageId: integer("message_id").notNull(),
+  userId: varchar("user_id").notNull(),
+  reaction: text("reaction").notNull(), // 'heart', 'thumbs_up'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertMessageReactionSchema = createInsertSchema(messageReactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertMessageReaction = z.infer<typeof insertMessageReactionSchema>;
+export type MessageReaction = typeof messageReactions.$inferSelect;
 
 // Expense Categories
 export const expenseCategories = [

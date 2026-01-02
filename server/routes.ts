@@ -447,5 +447,212 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ============ MEETING NOTES ============
+  app.get("/api/meeting-notes", async (req, res) => {
+    try {
+      const userId = (req.query.userId as string) || "default-user";
+      const notes = await storage.getMeetingNotes(userId);
+      res.json(notes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch meeting notes" });
+    }
+  });
+
+  app.get("/api/meeting-notes/:id", async (req, res) => {
+    try {
+      const note = await storage.getMeetingNote(parseInt(req.params.id));
+      if (!note) {
+        return res.status(404).json({ error: "Meeting note not found" });
+      }
+      const shares = await storage.getMeetingNoteShares(note.id);
+      res.json({ ...note, shares });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch meeting note" });
+    }
+  });
+
+  app.post("/api/meeting-notes", async (req, res) => {
+    try {
+      const note = await storage.createMeetingNote({
+        ...req.body,
+        userId: req.body.userId || "default-user",
+      });
+      res.status(201).json(note);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create meeting note" });
+    }
+  });
+
+  app.patch("/api/meeting-notes/:id", async (req, res) => {
+    try {
+      const note = await storage.updateMeetingNote(parseInt(req.params.id), req.body);
+      if (!note) {
+        return res.status(404).json({ error: "Meeting note not found" });
+      }
+      res.json(note);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update meeting note" });
+    }
+  });
+
+  app.delete("/api/meeting-notes/:id", async (req, res) => {
+    try {
+      await storage.deleteMeetingNote(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete meeting note" });
+    }
+  });
+
+  // Meeting note sharing
+  app.post("/api/meeting-notes/:id/share", async (req, res) => {
+    try {
+      const noteId = parseInt(req.params.id);
+      const { email, permission, invitedBy } = req.body;
+      const share = await storage.createMeetingNoteShare({
+        noteId,
+        email,
+        permission,
+        invitedBy: invitedBy || "default-user",
+      });
+      res.status(201).json(share);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to share meeting note" });
+    }
+  });
+
+  app.delete("/api/meeting-notes/:noteId/share/:shareId", async (req, res) => {
+    try {
+      await storage.deleteMeetingNoteShare(parseInt(req.params.shareId));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to remove share" });
+    }
+  });
+
+  // ============ CHAT / CONVERSATIONS ============
+  app.get("/api/conversations", async (req, res) => {
+    try {
+      const userId = (req.query.userId as string) || "default-user";
+      const convos = await storage.getConversations(userId);
+      const result = await Promise.all(convos.map(async (c) => {
+        const participants = await storage.getConversationParticipants(c.id);
+        return { ...c, participants };
+      }));
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch conversations" });
+    }
+  });
+
+  app.get("/api/conversations/:id", async (req, res) => {
+    try {
+      const conv = await storage.getConversation(parseInt(req.params.id));
+      if (!conv) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      const participants = await storage.getConversationParticipants(conv.id);
+      const msgs = await storage.getMessages(conv.id);
+      const messagesWithReactions = await Promise.all(msgs.map(async (m) => {
+        const reactions = await storage.getMessageReactions(m.id);
+        return { ...m, reactions };
+      }));
+      res.json({ ...conv, participants, messages: messagesWithReactions });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch conversation" });
+    }
+  });
+
+  app.post("/api/conversations", async (req, res) => {
+    try {
+      const userId = req.body.userId || "default-user";
+      const conv = await storage.createConversation({ createdBy: userId });
+      
+      // Add creator as participant
+      await storage.addConversationParticipant({
+        conversationId: conv.id,
+        userId,
+        email: req.body.email || "",
+        joinedAt: new Date(),
+      });
+
+      res.status(201).json(conv);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create conversation" });
+    }
+  });
+
+  app.post("/api/conversations/:id/invite", async (req, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const { email, invitedBy } = req.body;
+      
+      // Generate invite token
+      const inviteToken = Math.random().toString(36).substring(2, 15);
+      
+      const participant = await storage.addConversationParticipant({
+        conversationId,
+        email,
+        inviteToken,
+        userId: null,
+      });
+      
+      res.status(201).json({ participant, inviteToken });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to invite participant" });
+    }
+  });
+
+  app.post("/api/conversations/:id/messages", async (req, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const message = await storage.createMessage({
+        conversationId,
+        senderId: req.body.senderId || "default-user",
+        senderName: req.body.senderName,
+        content: req.body.content,
+        replyToId: req.body.replyToId || null,
+      });
+      res.status(201).json(message);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  app.patch("/api/messages/:id", async (req, res) => {
+    try {
+      const message = await storage.updateMessage(parseInt(req.params.id), req.body.content);
+      if (!message) {
+        return res.status(404).json({ error: "Message not found" });
+      }
+      res.json(message);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update message" });
+    }
+  });
+
+  app.post("/api/messages/:id/reactions", async (req, res) => {
+    try {
+      const messageId = parseInt(req.params.id);
+      const reaction = await storage.addMessageReaction({
+        messageId,
+        userId: req.body.userId || "default-user",
+        reaction: req.body.reaction,
+      });
+      res.status(201).json(reaction);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to add reaction" });
+    }
+  });
+
+  app.delete("/api/messages/:messageId/reactions/:reactionId", async (req, res) => {
+    try {
+      await storage.removeMessageReaction(parseInt(req.params.reactionId));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to remove reaction" });
+    }
+  });
+
   return httpServer;
 }

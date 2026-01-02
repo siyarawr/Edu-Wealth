@@ -20,10 +20,11 @@ import {
   GraduationCap,
   DollarSign,
   Briefcase,
-  BookOpen,
   Heart,
   Save,
-  CheckCircle
+  CheckCircle,
+  Mail,
+  Linkedin
 } from "lucide-react";
 import type { User as UserType } from "@shared/schema";
 
@@ -40,6 +41,9 @@ const countries = [
 export default function Profile() {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    linkedinUrl: "",
     country: "",
     state: "",
     city: "",
@@ -60,6 +64,9 @@ export default function Profile() {
   useEffect(() => {
     if (user) {
       setFormData({
+        fullName: user.fullName || "",
+        email: user.email || "",
+        linkedinUrl: user.linkedinUrl || "",
         country: user.country || "",
         state: user.state || "",
         city: user.city || "",
@@ -145,6 +152,52 @@ export default function Profile() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="p-6 rounded-xl bg-card space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <User className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Personal Information</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Full Name</Label>
+              <Input
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                placeholder="e.g., John Doe"
+                className="bg-muted/50 border-0"
+                data-testid="input-fullname"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="e.g., john@email.com"
+                  className="bg-muted/50 border-0 pl-10"
+                  data-testid="input-email"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>LinkedIn Profile</Label>
+              <div className="relative">
+                <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={formData.linkedinUrl}
+                  onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
+                  placeholder="e.g., linkedin.com/in/johndoe"
+                  className="bg-muted/50 border-0 pl-10"
+                  data-testid="input-linkedin"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="p-6 rounded-xl bg-card space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <MapPin className="h-5 w-5 text-primary" />

@@ -14,7 +14,9 @@ import {
   Search,
   Sparkles,
   User,
-  Settings
+  Settings,
+  MessageCircle,
+  FileText
 } from "lucide-react";
 import {
   Sidebar,
@@ -51,7 +53,12 @@ const financeItems = [
 const academicsItems = [
   { title: "Seminars", url: "/seminars", icon: Calendar },
   { title: "My Notes", url: "/notes", icon: BookOpen },
+  { title: "Meeting Notes", url: "/meeting-notes", icon: FileText },
   { title: "Entrepreneurship", url: "/entrepreneurship", icon: Lightbulb },
+];
+
+const communicationItems = [
+  { title: "Messages", url: "/chat", icon: MessageCircle },
 ];
 
 interface NavSectionProps {
@@ -156,6 +163,11 @@ export function AppSidebar() {
             <NavSection
               title="Academics"
               items={academicsItems}
+              location={location}
+            />
+            <NavSection
+              title="Communication"
+              items={communicationItems}
               location={location}
             />
           </SidebarGroupContent>
