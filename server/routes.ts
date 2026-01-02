@@ -20,7 +20,8 @@ export async function registerRoutes(
   // ============ USER PROFILE ============
   app.get("/api/user/profile", async (req, res) => {
     try {
-      const userId = (req.query.userId as string) || "default-user";
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || (req.query.userId as string) || "default-user";
       let user = await storage.getUser(userId);
       if (!user) {
         user = await storage.createUser({ username: userId, password: "temp" });
@@ -33,7 +34,8 @@ export async function registerRoutes(
 
   app.patch("/api/user/profile", async (req, res) => {
     try {
-      const userId = (req.query.userId as string) || "default-user";
+      const authUser = req.user as any;
+      const userId = authUser?.claims?.sub || (req.query.userId as string) || "default-user";
       let user = await storage.getUser(userId);
       if (!user) {
         user = await storage.createUser({ username: userId, password: "temp" });
