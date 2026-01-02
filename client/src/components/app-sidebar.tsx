@@ -13,12 +13,12 @@ import {
   BookOpen,
   ChevronRight,
   Search,
-  Sparkles,
   User,
   MessageCircle,
   FileText,
   LogOut
 } from "lucide-react";
+import ewIconPath from "@assets/Screenshot_2026-01-02_at_8.44.57_AM_1767372300840.png";
 import { Button } from "@/components/ui/button";
 import type { User as UserType } from "@shared/schema";
 import {
@@ -130,9 +130,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-3 border-b border-sidebar-border">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Sparkles className="h-4 w-4" />
-          </div>
+          <img src={ewIconPath} alt="EduWealth" className="h-8 w-8 object-contain" />
           <div>
             <h1 className="text-sm font-semibold">Edu Wealth</h1>
           </div>
