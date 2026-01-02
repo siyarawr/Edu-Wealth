@@ -55,7 +55,10 @@ export async function registerRoutes(
   // ============ EXPENSES ============
   app.get("/api/expenses", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const expenses = await storage.getExpenses(userId);
       res.json(expenses);
     } catch (error) {
@@ -65,7 +68,10 @@ export async function registerRoutes(
 
   app.post("/api/expenses", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const expense = await storage.createExpense({
         ...req.body,
         userId,
@@ -102,7 +108,10 @@ export async function registerRoutes(
   // ============ BUDGETS ============
   app.get("/api/budgets", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const month = (req.query.month as string) || new Date().toISOString().slice(0, 7);
       const budgets = await storage.getBudgets(userId, month);
       res.json(budgets);
@@ -113,7 +122,10 @@ export async function registerRoutes(
 
   app.post("/api/budgets", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const budget = await storage.createBudget({
         ...req.body,
         userId,
@@ -210,7 +222,10 @@ export async function registerRoutes(
   // ============ SEMINAR NOTES ============
   app.get("/api/notes", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const notes = await storage.getSeminarNotes(userId);
       res.json(notes);
     } catch (error) {
@@ -220,7 +235,10 @@ export async function registerRoutes(
 
   app.post("/api/notes", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const note = await storage.createSeminarNote({
         ...req.body,
         userId,
@@ -255,7 +273,10 @@ export async function registerRoutes(
   // ============ AI NOTE GENERATION ============
   app.post("/api/notes/generate", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const { transcript, seminarId, title, category } = req.body;
 
       if (!transcript) {
@@ -319,7 +340,10 @@ Format your response as JSON with this structure:
   // ============ FILE UPLOAD FOR NOTES ============
   app.post("/api/notes/upload", upload.single("file"), async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const file = req.file;
       const { title, category } = req.body;
 
@@ -408,7 +432,10 @@ Format your response as JSON with this structure:
   // ============ CALENDAR EVENTS ============
   app.get("/api/calendar", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const startDate = req.query.start ? new Date(req.query.start as string) : undefined;
       const endDate = req.query.end ? new Date(req.query.end as string) : undefined;
       const events = await storage.getCalendarEvents(userId, startDate, endDate);
@@ -420,7 +447,10 @@ Format your response as JSON with this structure:
 
   app.post("/api/calendar", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const event = await storage.createCalendarEvent({
         ...req.body,
         userId,
@@ -539,9 +569,9 @@ Format your response as JSON with this structure:
         s.speaker?.toLowerCase().includes(searchLower)
       ).slice(0, 10);
 
-      const userId = (req.query.userId as string) || "default-user";
+      const userId = (req.user as any)?.id;
       
-      const meetingNotes = await storage.getMeetingNotes(userId);
+      const meetingNotes = userId ? await storage.getMeetingNotes(userId) : [];
       const matchedMeetingNotes = meetingNotes.filter(n =>
         n.title.toLowerCase().includes(searchLower) ||
         n.summary?.toLowerCase().includes(searchLower) ||
@@ -561,7 +591,7 @@ Format your response as JSON with this structure:
         i.description?.toLowerCase().includes(searchLower)
       ).slice(0, 10);
 
-      const allNotes = await storage.getSeminarNotes(userId);
+      const allNotes = userId ? await storage.getSeminarNotes(userId) : [];
       const matchedSeminarNotes = allNotes.filter(n =>
         n.content?.toLowerCase().includes(searchLower)
       ).slice(0, 10);
@@ -589,7 +619,10 @@ Format your response as JSON with this structure:
   // ============ DASHBOARD STATS ============
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
-      const userId = (req.query.userId as string) || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const expenses = await storage.getExpenses(userId);
       const seminars = await storage.getSeminars();
       const internships = await storage.getInternships();
@@ -631,7 +664,10 @@ Format your response as JSON with this structure:
   // ============ MEETING NOTES ============
   app.get("/api/meeting-notes", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const notes = await storage.getMeetingNotes(userId);
       res.json(notes);
     } catch (error) {
@@ -654,7 +690,10 @@ Format your response as JSON with this structure:
 
   app.post("/api/meeting-notes", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const note = await storage.createMeetingNote({
         ...req.body,
         userId,
@@ -691,13 +730,17 @@ Format your response as JSON with this structure:
   // Meeting note sharing
   app.post("/api/meeting-notes/:id/share", async (req, res) => {
     try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const noteId = parseInt(req.params.id);
-      const { email, permission, invitedBy } = req.body;
+      const { email, permission } = req.body;
       const share = await storage.createMeetingNoteShare({
         noteId,
         email,
         permission,
-        invitedBy: invitedBy || "default-user",
+        invitedBy: userId,
       });
       res.status(201).json(share);
     } catch (error) {
@@ -717,7 +760,10 @@ Format your response as JSON with this structure:
   // ============ CHAT / CONVERSATIONS ============
   app.get("/api/conversations", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const convos = await storage.getConversations(userId);
       const result = await Promise.all(convos.map(async (c) => {
         const participants = await storage.getConversationParticipants(c.id);
@@ -749,7 +795,10 @@ Format your response as JSON with this structure:
 
   app.post("/api/conversations", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const conv = await storage.createConversation({ createdBy: userId });
       
       // Add creator as participant
@@ -768,7 +817,10 @@ Format your response as JSON with this structure:
 
   app.post("/api/conversations/:id/messages", async (req, res) => {
     try {
-      const userId = (req.user as any)?.id || "default-user";
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const conversationId = parseInt(req.params.id);
       const message = await storage.createMessage({
         conversationId,
@@ -798,8 +850,11 @@ Format your response as JSON with this structure:
   // Toggle reaction (add if not exists, remove if exists)
   app.post("/api/messages/:id/reactions/toggle", async (req, res) => {
     try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const messageId = parseInt(req.params.id);
-      const userId = req.body.userId || "default-user";
       const reactionType = req.body.reaction;
       
       const existingReaction = await storage.findUserReaction(messageId, userId, reactionType);
@@ -822,10 +877,14 @@ Format your response as JSON with this structure:
 
   app.post("/api/messages/:id/reactions", async (req, res) => {
     try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const messageId = parseInt(req.params.id);
       const reaction = await storage.addMessageReaction({
         messageId,
-        userId: req.body.userId || "default-user",
+        userId,
         reaction: req.body.reaction,
       });
       res.status(201).json(reaction);
