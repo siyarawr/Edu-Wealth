@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import OpenAI from "openai";
-import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { setupAuth, registerAuthRoutes } from "./auth/localAuth";
 import multer from "multer";
 
 const upload = multer({ 
@@ -25,14 +25,13 @@ export async function registerRoutes(
   // ============ USER PROFILE ============
   app.get("/api/user/profile", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub;
+      const userId = (req.user as any)?.id;
       if (!userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
-      let user = await storage.getUser(userId);
+      const user = await storage.getUser(userId);
       if (!user) {
-        user = await storage.createUser({ username: userId, password: "temp" });
+        return res.status(404).json({ error: "User not found" });
       }
       res.json(user);
     } catch (error) {
@@ -42,16 +41,11 @@ export async function registerRoutes(
 
   app.patch("/api/user/profile", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub;
+      const userId = (req.user as any)?.id;
       if (!userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
-      let user = await storage.getUser(userId);
-      if (!user) {
-        user = await storage.createUser({ username: userId, password: "temp" });
-      }
-      const updated = await storage.updateUserProfile(user.id, req.body);
+      const updated = await storage.updateUserProfile(userId, req.body);
       res.json(updated);
     } catch (error) {
       res.status(500).json({ error: "Failed to update profile" });
@@ -61,8 +55,7 @@ export async function registerRoutes(
   // ============ EXPENSES ============
   app.get("/api/expenses", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || (req.query.userId as string) || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const expenses = await storage.getExpenses(userId);
       res.json(expenses);
     } catch (error) {
@@ -72,8 +65,7 @@ export async function registerRoutes(
 
   app.post("/api/expenses", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || req.body.userId || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const expense = await storage.createExpense({
         ...req.body,
         userId,
@@ -110,8 +102,7 @@ export async function registerRoutes(
   // ============ BUDGETS ============
   app.get("/api/budgets", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const month = (req.query.month as string) || new Date().toISOString().slice(0, 7);
       const budgets = await storage.getBudgets(userId, month);
       res.json(budgets);
@@ -122,8 +113,7 @@ export async function registerRoutes(
 
   app.post("/api/budgets", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const budget = await storage.createBudget({
         ...req.body,
         userId,
@@ -220,8 +210,7 @@ export async function registerRoutes(
   // ============ SEMINAR NOTES ============
   app.get("/api/notes", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const notes = await storage.getSeminarNotes(userId);
       res.json(notes);
     } catch (error) {
@@ -231,8 +220,7 @@ export async function registerRoutes(
 
   app.post("/api/notes", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const note = await storage.createSeminarNote({
         ...req.body,
         userId,
@@ -267,8 +255,7 @@ export async function registerRoutes(
   // ============ AI NOTE GENERATION ============
   app.post("/api/notes/generate", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const { transcript, seminarId, title, category } = req.body;
 
       if (!transcript) {
@@ -332,8 +319,7 @@ Format your response as JSON with this structure:
   // ============ FILE UPLOAD FOR NOTES ============
   app.post("/api/notes/upload", upload.single("file"), async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const file = req.file;
       const { title, category } = req.body;
 
@@ -422,8 +408,7 @@ Format your response as JSON with this structure:
   // ============ CALENDAR EVENTS ============
   app.get("/api/calendar", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const startDate = req.query.start ? new Date(req.query.start as string) : undefined;
       const endDate = req.query.end ? new Date(req.query.end as string) : undefined;
       const events = await storage.getCalendarEvents(userId, startDate, endDate);
@@ -435,8 +420,7 @@ Format your response as JSON with this structure:
 
   app.post("/api/calendar", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || req.body.userId || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const event = await storage.createCalendarEvent({
         ...req.body,
         userId,
@@ -647,8 +631,7 @@ Format your response as JSON with this structure:
   // ============ MEETING NOTES ============
   app.get("/api/meeting-notes", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const notes = await storage.getMeetingNotes(userId);
       res.json(notes);
     } catch (error) {
@@ -671,8 +654,7 @@ Format your response as JSON with this structure:
 
   app.post("/api/meeting-notes", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || req.body.userId || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const note = await storage.createMeetingNote({
         ...req.body,
         userId,
@@ -735,8 +717,7 @@ Format your response as JSON with this structure:
   // ============ CHAT / CONVERSATIONS ============
   app.get("/api/conversations", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || (req.query.userId as string) || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const convos = await storage.getConversations(userId);
       const result = await Promise.all(convos.map(async (c) => {
         const participants = await storage.getConversationParticipants(c.id);
@@ -768,8 +749,7 @@ Format your response as JSON with this structure:
 
   app.post("/api/conversations", async (req, res) => {
     try {
-      const authUser = req.user as any;
-      const userId = authUser?.claims?.sub || req.body.userId || "default-user";
+      const userId = (req.user as any)?.id || "default-user";
       const conv = await storage.createConversation({ createdBy: userId });
       
       // Add creator as participant
@@ -788,11 +768,11 @@ Format your response as JSON with this structure:
 
   app.post("/api/conversations/:id/messages", async (req, res) => {
     try {
-      const authUser = req.user as any;
+      const userId = (req.user as any)?.id || "default-user";
       const conversationId = parseInt(req.params.id);
       const message = await storage.createMessage({
         conversationId,
-        senderId: authUser?.claims?.sub || req.body.senderId || "default-user",
+        senderId: userId,
         senderName: req.body.senderName,
         content: req.body.content,
         replyToId: req.body.replyToId || null,
@@ -874,12 +854,12 @@ Format your response as JSON with this structure:
 
   // ============ FINANCE TRACKER ============
   app.get("/api/finance-entries", async (req, res) => {
-    const authUser = req.user as any;
-    if (!authUser?.claims?.sub) {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
       return res.status(401).json({ error: "Not authenticated" });
     }
     try {
-      const entries = await storage.getFinanceEntries(authUser.claims.sub);
+      const entries = await storage.getFinanceEntries(userId);
       res.json(entries);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch finance entries" });
@@ -887,14 +867,14 @@ Format your response as JSON with this structure:
   });
 
   app.post("/api/finance-entries", async (req, res) => {
-    const authUser = req.user as any;
-    if (!authUser?.claims?.sub) {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
       return res.status(401).json({ error: "Not authenticated" });
     }
     try {
       const { type, source, amount, tag, date } = req.body;
       const entry = await storage.createFinanceEntry({
-        userId: authUser.claims.sub,
+        userId,
         type,
         source,
         amount: parseFloat(amount),
@@ -909,8 +889,8 @@ Format your response as JSON with this structure:
   });
 
   app.patch("/api/finance-entries/:id", async (req, res) => {
-    const authUser = req.user as any;
-    if (!authUser?.claims?.sub) {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
       return res.status(401).json({ error: "Not authenticated" });
     }
     try {
@@ -932,8 +912,8 @@ Format your response as JSON with this structure:
   });
 
   app.delete("/api/finance-entries/:id", async (req, res) => {
-    const authUser = req.user as any;
-    if (!authUser?.claims?.sub) {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
       return res.status(401).json({ error: "Not authenticated" });
     }
     try {
