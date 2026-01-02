@@ -18,7 +18,7 @@ import {
   FileText,
   LogOut
 } from "lucide-react";
-import ewIconPath from "@assets/Screenshot_2026-01-02_at_8.44.57_AM_1767372300840.png";
+import ewIconPath from "@assets/image_1767372559290.png";
 import { Button } from "@/components/ui/button";
 import type { User as UserType } from "@shared/schema";
 import {
