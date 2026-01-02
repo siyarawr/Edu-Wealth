@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -18,19 +17,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import {
   Plus,
   Search,
-  Filter,
   Home,
   Utensils,
   Car,
@@ -40,14 +30,14 @@ import {
   Zap,
   Shirt,
   User,
-  MoreHorizontal
+  MoreHorizontal,
+  Trash2
 } from "lucide-react";
 import {
   PieChart,
   Pie,
   Cell,
   ResponsiveContainer,
-  Legend,
   Tooltip
 } from "recharts";
 
@@ -65,16 +55,8 @@ const categoryIcons: Record<string, React.ReactNode> = {
 };
 
 const categories = [
-  "Housing",
-  "Food",
-  "Transportation",
-  "Education",
-  "Entertainment",
-  "Healthcare",
-  "Utilities",
-  "Clothing",
-  "Personal",
-  "Other"
+  "Housing", "Food", "Transportation", "Education", "Entertainment",
+  "Healthcare", "Utilities", "Clothing", "Personal", "Other"
 ];
 
 const mockExpenses = [
@@ -118,11 +100,11 @@ export default function Expenses() {
   const totalSpent = mockExpenses.reduce((sum, exp) => sum + exp.amount, 0);
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-8 space-y-8 max-w-5xl mx-auto">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-3xl font-semibold">Expenses</h1>
-          <p className="text-muted-foreground">Track and manage your spending</p>
+          <h1 className="text-4xl font-bold">Expenses</h1>
+          <p className="text-muted-foreground mt-1">Track and manage your spending</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -138,12 +120,7 @@ export default function Expenses() {
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label htmlFor="amount">Amount</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  placeholder="0.00"
-                  data-testid="input-expense-amount"
-                />
+                <Input id="amount" type="number" placeholder="0.00" data-testid="input-expense-amount" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
@@ -165,19 +142,11 @@ export default function Expenses() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Input
-                  id="description"
-                  placeholder="What was this expense for?"
-                  data-testid="input-expense-description"
-                />
+                <Input id="description" placeholder="What was this expense for?" data-testid="input-expense-description" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  data-testid="input-expense-date"
-                />
+                <Input id="date" type="date" data-testid="input-expense-date" />
               </div>
               <Button className="w-full" data-testid="button-save-expense">
                 Save Expense
@@ -188,65 +157,64 @@ export default function Expenses() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Spending Breakdown */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle>Spending by Category</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: number) => [`$${value}`, ""]}
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-4 text-center">
-              <p className="text-sm text-muted-foreground">Total This Month</p>
-              <p className="text-2xl font-bold font-mono">${totalSpent.toFixed(2)}</p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="p-6 rounded-xl bg-card">
+          <h2 className="text-lg font-semibold mb-4">Spending by Category</h2>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={40}
+                  outerRadius={70}
+                  paddingAngle={2}
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: number) => [`$${value}`, ""]}
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--popover))",
+                    border: "none",
+                    borderRadius: "8px",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-sm text-muted-foreground">Total This Month</p>
+            <p className="text-2xl font-bold font-mono">${totalSpent.toFixed(2)}</p>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2 justify-center">
+            {pieData.map((item) => (
+              <div key={item.name} className="flex items-center gap-1.5 text-xs">
+                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                <span className="text-muted-foreground">{item.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
 
-        {/* Budget Progress */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Budget Progress</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div className="lg:col-span-2 p-6 rounded-xl bg-card">
+          <h2 className="text-lg font-semibold mb-4">Budget Progress</h2>
+          <div className="space-y-4">
             {budgetCategories.map((category) => {
               const percentage = (category.spent / category.limit) * 100;
               const isOverBudget = percentage > 100;
               return (
-                <div key={category.name} className="space-y-2">
+                <div key={category.name} className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {categoryIcons[category.name]}
                       <span className="text-sm font-medium">{category.name}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-mono">
+                      <span className="text-xs font-mono text-muted-foreground">
                         ${category.spent} / ${category.limit}
                       </span>
                       {isOverBudget && (
@@ -256,78 +224,80 @@ export default function Expenses() {
                   </div>
                   <Progress
                     value={Math.min(percentage, 100)}
-                    className={`h-2 ${isOverBudget ? "[&>div]:bg-destructive" : ""}`}
+                    className={`h-1.5 ${isOverBudget ? "[&>div]:bg-destructive" : ""}`}
                   />
                 </div>
               );
             })}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Expense Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <CardTitle>Transaction History</CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search expenses..."
-                  className="pl-9 w-64"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  data-testid="input-search-expenses"
-                />
-              </div>
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="w-40" data-testid="select-filter-category">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Filter" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+      <div className="p-6 rounded-xl bg-card">
+        <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+          <h2 className="text-lg font-semibold">Transaction History</h2>
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                className="pl-9 w-48 h-9 bg-muted/50 border-0"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                data-testid="input-search-expenses"
+              />
             </div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-36 h-9 bg-muted/50 border-0" data-testid="select-filter-category">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredExpenses.map((expense) => (
-                <TableRow key={expense.id} data-testid={`row-expense-${expense.id}`}>
-                  <TableCell className="font-mono text-sm">
-                    {new Date(expense.date).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>{expense.description}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="gap-1">
-                      {categoryIcons[expense.category]}
-                      {expense.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono font-medium">
-                    ${expense.amount.toFixed(2)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        </div>
+
+        <div className="space-y-1">
+          <div className="grid grid-cols-12 gap-4 py-2 px-3 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <div className="col-span-2">Date</div>
+            <div className="col-span-5">Description</div>
+            <div className="col-span-3">Category</div>
+            <div className="col-span-2 text-right">Amount</div>
+          </div>
+          {filteredExpenses.map((expense) => (
+            <div
+              key={expense.id}
+              className="grid grid-cols-12 gap-4 py-3 px-3 rounded-lg hover-elevate group items-center"
+              data-testid={`row-expense-${expense.id}`}
+            >
+              <div className="col-span-2 font-mono text-sm text-muted-foreground">
+                {new Date(expense.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </div>
+              <div className="col-span-5 text-sm">{expense.description}</div>
+              <div className="col-span-3">
+                <Badge variant="secondary" className="gap-1 font-normal">
+                  {categoryIcons[expense.category]}
+                  {expense.category}
+                </Badge>
+              </div>
+              <div className="col-span-2 text-right font-mono font-medium flex items-center justify-end gap-2">
+                <span>${expense.amount.toFixed(2)}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

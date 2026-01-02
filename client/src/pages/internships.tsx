@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -20,7 +19,8 @@ import {
   DollarSign,
   ExternalLink,
   Briefcase,
-  Laptop
+  Laptop,
+  Sparkles
 } from "lucide-react";
 import type { Internship } from "@shared/schema";
 
@@ -48,32 +48,18 @@ export default function Internships() {
     return matchesSearch && matchesType && matchesLocation;
   });
 
+  const remoteCount = internships.filter(i => i.isRemote).length;
+
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <Skeleton className="h-9 w-48" />
-            <Skeleton className="h-5 w-64 mt-2" />
-          </div>
+      <div className="p-8 space-y-8 max-w-5xl mx-auto">
+        <div>
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-5 w-64 mt-2" />
         </div>
-        <Card>
-          <CardContent className="pt-6">
-            <Skeleton className="h-10 w-full" />
-          </CardContent>
-        </Card>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-12 w-full" />
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardContent>
-            </Card>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-40 rounded-xl" />
           ))}
         </div>
       </div>
@@ -81,132 +67,133 @@ export default function Internships() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-semibold">Internships</h1>
-          <p className="text-muted-foreground">Discover your first career opportunities</p>
-        </div>
-        <Badge variant="secondary" className="text-sm">
-          {internships.length} opportunities
-        </Badge>
+    <div className="p-8 space-y-6 max-w-5xl mx-auto">
+      <div>
+        <h1 className="text-4xl font-bold">Internships</h1>
+        <p className="text-muted-foreground mt-1">Discover your first career opportunities</p>
       </div>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by company or role..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                data-testid="input-search-internships"
-              />
-            </div>
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-40" data-testid="select-type-filter">
-                <Clock className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                {types.map((type) => (
-                  <SelectItem key={type} value={type}>{type}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={locationFilter} onValueChange={setLocationFilter}>
-              <SelectTrigger className="w-44" data-testid="select-location-filter">
-                <MapPin className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Location" />
-              </SelectTrigger>
-              <SelectContent>
-                {locations.map((loc) => (
-                  <SelectItem key={loc} value={loc}>{loc}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex gap-4 p-4 rounded-xl bg-muted/30">
+        <div className="flex items-center gap-2">
+          <Briefcase className="h-4 w-4 text-primary" />
+          <span className="text-sm"><span className="font-bold">{internships.length}</span> opportunities</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Laptop className="h-4 w-4 text-chart-2" />
+          <span className="text-sm"><span className="font-bold">{remoteCount}</span> remote</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-chart-4" />
+          <span className="text-sm">Updated daily</span>
+        </div>
+      </div>
 
-      {/* Internship Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by company or role..."
+            className="pl-9 bg-muted/50 border-0"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            data-testid="input-search-internships"
+          />
+        </div>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-36 bg-muted/50 border-0" data-testid="select-type-filter">
+            <Clock className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            {types.map((type) => (
+              <SelectItem key={type} value={type}>{type}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={locationFilter} onValueChange={setLocationFilter}>
+          <SelectTrigger className="w-40 bg-muted/50 border-0" data-testid="select-location-filter">
+            <MapPin className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Location" />
+          </SelectTrigger>
+          <SelectContent>
+            {locations.map((loc) => (
+              <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-4">
         {filteredInternships.map((internship) => (
-          <Card key={internship.id} className="flex flex-col" data-testid={`card-internship-${internship.id}`}>
-            <CardHeader>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Building2 className="h-6 w-6" />
-                  </div>
+          <div
+            key={internship.id}
+            className="p-5 rounded-xl bg-card hover-elevate"
+            data-testid={`card-internship-${internship.id}`}
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary text-xl font-bold flex-shrink-0">
+                {internship.company.charAt(0)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-4">
                   <div>
-                    <CardTitle className="text-lg">{internship.title}</CardTitle>
+                    <h3 className="font-semibold">{internship.title}</h3>
                     <p className="text-sm text-muted-foreground">{internship.company}</p>
                   </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Badge variant="outline">{internship.type}</Badge>
+                    {internship.isRemote && (
+                      <Badge variant="secondary" className="gap-1">
+                        <Laptop className="h-3 w-3" />
+                        Remote
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <Badge variant="outline">{internship.type}</Badge>
-                  {internship.isRemote && (
-                    <Badge variant="secondary" className="gap-1">
-                      <Laptop className="h-3 w-3" />
-                      Remote
-                    </Badge>
+                <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{internship.description}</p>
+                <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground flex-wrap">
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {internship.location}
+                  </span>
+                  {internship.salary && (
+                    <span className="flex items-center gap-1.5 font-mono">
+                      <DollarSign className="h-3.5 w-3.5" />
+                      {internship.salary}
+                    </span>
+                  )}
+                  {internship.deadline && (
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5" />
+                      Due {new Date(internship.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                    </span>
                   )}
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 space-y-4">
-              <p className="text-sm text-muted-foreground line-clamp-2">
-                {internship.description}
-              </p>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{internship.location}</span>
+                <div className="mt-3">
+                  <p className="text-xs text-muted-foreground mb-1">Requirements</p>
+                  <p className="text-sm">{internship.requirements}</p>
                 </div>
-                {internship.salary && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-mono">{internship.salary}</span>
-                  </div>
-                )}
-                {internship.deadline && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>Deadline: {new Date(internship.deadline).toLocaleDateString()}</span>
-                  </div>
-                )}
+                <div className="mt-4 flex items-center gap-2">
+                  <Button asChild>
+                    <a href={internship.applyUrl || "#"} target="_blank" rel="noopener noreferrer" data-testid={`button-apply-${internship.id}`}>
+                      Apply Now
+                      <ExternalLink className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                  <Button variant="outline">Save</Button>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-2">Requirements:</p>
-                <p className="text-sm">{internship.requirements}</p>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button className="w-full" asChild>
-                <a href={internship.applyUrl || "#"} target="_blank" rel="noopener noreferrer" data-testid={`button-apply-${internship.id}`}>
-                  Apply Now
-                  <ExternalLink className="ml-2 h-4 w-4" />
-                </a>
-              </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
 
       {filteredInternships.length === 0 && !isLoading && (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No internships found</h3>
-            <p className="text-muted-foreground">
-              Try adjusting your search or filter criteria
-            </p>
-          </CardContent>
-        </Card>
+        <div className="py-16 text-center">
+          <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium mb-2">No internships found</h3>
+          <p className="text-muted-foreground">Try adjusting your search or filters</p>
+        </div>
       )}
     </div>
   );

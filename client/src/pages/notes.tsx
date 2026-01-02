@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -122,7 +121,6 @@ export default function Notes() {
 
   const formatDate = (dateString: Date | string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
-      weekday: "short",
       month: "short",
       day: "numeric",
       year: "numeric"
@@ -131,196 +129,136 @@ export default function Notes() {
 
   const upcomingSeminars = seminars.filter(s => new Date(s.date) > new Date()).slice(0, 3);
 
-  const totalActionItems = filteredNotes.reduce(
-    (sum, note) => sum + (note.parsedActionItems?.length || 0),
-    0
-  );
-
   if (notesLoading) {
     return (
-      <div className="p-6 space-y-6 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <Skeleton className="h-9 w-48" />
-            <Skeleton className="h-5 w-64 mt-2" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardContent className="pt-4 pb-4">
-                <Skeleton className="h-12 w-full" />
-              </CardContent>
-            </Card>
-          ))}
+      <div className="p-8 space-y-8 max-w-5xl mx-auto">
+        <div>
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-5 w-64 mt-2" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
             {[1, 2].map((i) => (
-              <Card key={i}>
-                <CardContent className="pt-6">
-                  <Skeleton className="h-40 w-full" />
-                </CardContent>
-              </Card>
+              <Skeleton key={i} className="h-40 rounded-xl" />
             ))}
           </div>
-          <Card>
-            <CardContent className="pt-6">
-              <Skeleton className="h-64 w-full" />
-            </CardContent>
-          </Card>
+          <Skeleton className="h-80 rounded-xl" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-semibold">My Notes</h1>
-          <p className="text-muted-foreground">AI-powered notes from your seminars</p>
+    <div className="p-8 space-y-6 max-w-5xl mx-auto">
+      <div>
+        <h1 className="text-4xl font-bold">My Notes</h1>
+        <p className="text-muted-foreground mt-1">AI-powered notes from your seminars</p>
+      </div>
+
+      <div className="flex gap-4 p-4 rounded-xl bg-muted/30">
+        <div className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-primary" />
+          <span className="text-sm"><span className="font-bold">{notes.length}</span> notes</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-chart-2" />
+          <span className="text-sm">
+            <span className="font-bold">
+              {filteredNotes.reduce((sum, note) => sum + (note.parsedActionItems?.length || 0), 0)}
+            </span> action items
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-chart-4" />
+          <span className="text-sm"><span className="font-bold">{upcomingSeminars.length}</span> upcoming</span>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-3">
-              <FileText className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-2xl font-bold">{notes.length}</p>
-                <p className="text-xs text-muted-foreground">Saved Notes</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-2xl font-bold">{totalActionItems}</p>
-                <p className="text-xs text-muted-foreground">Action Items</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-2xl font-bold">{upcomingSeminars.length}</p>
-                <p className="text-xs text-muted-foreground">Upcoming Seminars</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Notes List */}
         <div className="lg:col-span-2 space-y-4">
-          {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search notes..."
-              className="pl-9"
+              className="pl-9 bg-muted/50 border-0"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               data-testid="input-search-notes"
             />
           </div>
 
-          {/* Notes Grid */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredNotes.map((note) => (
-              <Card key={note.id} data-testid={`card-note-${note.id}`}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <CardTitle className="text-lg">{getSeminarTitle(note.seminarId)}</CardTitle>
-                      <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        {formatDate(note.createdAt)}
-                      </div>
+              <div key={note.id} className="p-5 rounded-xl bg-card hover-elevate" data-testid={`card-note-${note.id}`}>
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <div>
+                    <h3 className="font-semibold">{getSeminarTitle(note.seminarId)}</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {formatDate(note.createdAt)}
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="gap-1 flex-shrink-0">
+                    <Sparkles className="h-3 w-3" />
+                    AI
+                  </Badge>
+                </div>
+
+                <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
+                  {note.content}
+                </p>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  {note.parsedKeyPoints && note.parsedKeyPoints.length > 0 && (
+                    <div className="space-y-1.5">
+                      <h4 className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                        <Lightbulb className="h-3.5 w-3.5 text-chart-4" />
+                        Key Points
+                      </h4>
+                      <ul className="text-sm space-y-1">
+                        {note.parsedKeyPoints.slice(0, 2).map((point, idx) => (
+                          <li key={idx} className="line-clamp-1 text-muted-foreground">{point}</li>
+                        ))}
+                        {note.parsedKeyPoints.length > 2 && (
+                          <li className="text-xs text-muted-foreground">+{note.parsedKeyPoints.length - 2} more</li>
+                        )}
+                      </ul>
                     </div>
-                    <Badge variant="secondary" className="gap-1">
-                      <Sparkles className="h-3 w-3" />
-                      AI Generated
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-muted-foreground line-clamp-3">
-                    {note.content}
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {note.parsedKeyPoints && note.parsedKeyPoints.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium flex items-center gap-2">
-                          <Lightbulb className="h-4 w-4 text-chart-4" />
-                          Key Points ({note.parsedKeyPoints.length})
-                        </h4>
-                        <ul className="text-sm text-muted-foreground space-y-1">
-                          {note.parsedKeyPoints.slice(0, 3).map((point, idx) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              <span className="text-chart-2">-</span>
-                              <span className="line-clamp-1">{point}</span>
-                            </li>
-                          ))}
-                          {note.parsedKeyPoints.length > 3 && (
-                            <li className="text-xs text-muted-foreground">
-                              +{note.parsedKeyPoints.length - 3} more...
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    )}
-                    {note.parsedActionItems && note.parsedActionItems.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium flex items-center gap-2">
-                          <ListTodo className="h-4 w-4 text-chart-1" />
-                          Action Items ({note.parsedActionItems.length})
-                        </h4>
-                        <ul className="text-sm text-muted-foreground space-y-1">
-                          {note.parsedActionItems.slice(0, 3).map((item, idx) => (
-                            <li key={idx} className="flex items-start gap-2">
-                              <CheckCircle2 className="h-3 w-3 mt-0.5 text-chart-2" />
-                              <span className="line-clamp-1">{item}</span>
-                            </li>
-                          ))}
-                          {note.parsedActionItems.length > 3 && (
-                            <li className="text-xs text-muted-foreground">
-                              +{note.parsedActionItems.length - 3} more...
-                            </li>
-                          )}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-                <CardFooter className="gap-2">
+                  )}
+                  {note.parsedActionItems && note.parsedActionItems.length > 0 && (
+                    <div className="space-y-1.5">
+                      <h4 className="text-xs font-medium flex items-center gap-1.5 text-muted-foreground">
+                        <ListTodo className="h-3.5 w-3.5 text-chart-1" />
+                        Action Items
+                      </h4>
+                      <ul className="text-sm space-y-1">
+                        {note.parsedActionItems.slice(0, 2).map((item, idx) => (
+                          <li key={idx} className="flex items-center gap-1.5 text-muted-foreground">
+                            <CheckCircle2 className="h-3 w-3 text-chart-2 flex-shrink-0" />
+                            <span className="line-clamp-1">{item}</span>
+                          </li>
+                        ))}
+                        {note.parsedActionItems.length > 2 && (
+                          <li className="text-xs text-muted-foreground">+{note.parsedActionItems.length - 2} more</li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="flex-1" data-testid={`button-view-note-${note.id}`}>
+                      <Button variant="outline" size="sm" className="flex-1" data-testid={`button-view-note-${note.id}`}>
                         View Full Notes
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-3xl">
+                    <DialogContent className="max-w-2xl">
                       <DialogHeader>
                         <DialogTitle>{getSeminarTitle(note.seminarId)}</DialogTitle>
                       </DialogHeader>
-                      <ScrollArea className="max-h-[70vh]">
-                        <div className="space-y-6 pr-4">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
-                            {formatDate(note.createdAt)}
-                          </div>
+                      <ScrollArea className="max-h-[65vh]">
+                        <div className="space-y-5 pr-4">
+                          <p className="text-sm text-muted-foreground">{formatDate(note.createdAt)}</p>
                           
                           <div className="space-y-2">
                             <h3 className="font-medium">Summary</h3>
@@ -374,10 +312,9 @@ export default function Notes() {
                             </Button>
                             <Button
                               variant="outline"
-                              className="text-destructive"
                               onClick={() => deleteNoteMutation.mutate(note.id)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
                         </div>
@@ -385,97 +322,78 @@ export default function Notes() {
                     </DialogContent>
                   </Dialog>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
+                    className="h-8 w-8"
                     onClick={() => deleteNoteMutation.mutate(note.id)}
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4 text-muted-foreground" />
                   </Button>
-                </CardFooter>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
 
           {filteredNotes.length === 0 && !notesLoading && (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No notes found</h3>
-                <p className="text-muted-foreground">
-                  Use the AI note taker to generate notes from seminar transcripts
-                </p>
-              </CardContent>
-            </Card>
+            <div className="py-16 text-center">
+              <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No notes found</h3>
+              <p className="text-muted-foreground">Use the AI note taker to generate notes</p>
+            </div>
           )}
         </div>
 
-        {/* AI Note Taker Panel */}
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5" />
-                AI Note Taker
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Paste your seminar transcript or notes, and AI will extract key points and action items.
-              </p>
-              <Textarea
-                placeholder="Paste seminar transcript or notes here..."
-                className="min-h-32"
-                value={aiInput}
-                onChange={(e) => setAiInput(e.target.value)}
-                data-testid="textarea-ai-input"
-              />
-              <Button
-                className="w-full"
-                onClick={() => generateNotesMutation.mutate(aiInput)}
-                disabled={generateNotesMutation.isPending || !aiInput.trim()}
-                data-testid="button-generate-notes"
-              >
-                {generateNotesMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Generate Notes
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="p-5 rounded-xl bg-card">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h2 className="font-semibold">AI Note Taker</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Paste your seminar transcript and AI will extract key points and action items.
+            </p>
+            <Textarea
+              placeholder="Paste transcript here..."
+              className="min-h-28 mb-3 bg-muted/50 border-0"
+              value={aiInput}
+              onChange={(e) => setAiInput(e.target.value)}
+              data-testid="textarea-ai-input"
+            />
+            <Button
+              className="w-full"
+              onClick={() => generateNotesMutation.mutate(aiInput)}
+              disabled={generateNotesMutation.isPending || !aiInput.trim()}
+              data-testid="button-generate-notes"
+            >
+              {generateNotesMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate Notes
+                </>
+              )}
+            </Button>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Upcoming Seminars</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+          <div className="p-5 rounded-xl bg-card">
+            <h2 className="font-semibold mb-3">Upcoming Seminars</h2>
+            <div className="space-y-2">
               {upcomingSeminars.length > 0 ? (
                 upcomingSeminars.map((seminar) => (
-                  <div
-                    key={seminar.id}
-                    className="flex items-center justify-between p-2 rounded-md bg-muted/50"
-                  >
-                    <div>
-                      <p className="text-sm font-medium line-clamp-1">{seminar.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(seminar.date)}
-                      </p>
-                    </div>
+                  <div key={seminar.id} className="p-3 rounded-lg bg-muted/50 hover-elevate">
+                    <p className="text-sm font-medium line-clamp-1">{seminar.title}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(seminar.date)}</p>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No upcoming seminars
-                </p>
+                <p className="text-sm text-muted-foreground text-center py-4">No upcoming seminars</p>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

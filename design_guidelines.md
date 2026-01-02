@@ -1,126 +1,119 @@
-# Design Guidelines: Student Financial Management & Seminar Planner
+# Design Guidelines: StudentHub - Notion-Inspired Student Platform
 
 ## Design Approach
 
-**Hybrid System**: Linear's clean typography and spatial hierarchy + Material Design components for data-rich interfaces. This combination delivers the precision needed for financial tracking while maintaining modern, student-friendly aesthetics.
+**Notion-Inspired System**: Calm, productivity-focused aesthetic with block-based content architecture. Combines Notion's minimal interface patterns with strategic warmth for student engagement.
 
-**Key Principles**:
-- Information clarity over decoration
-- Scannable data hierarchies
-- Efficient task completion paths
-- Trust through professional polish
+**Core Principles**:
+- Content-first block architecture
+- Hover-revealed interactions minimize visual noise
+- Generous whitespace creates breathing room
+- Subtle depth through shadows, not borders
+- Monochromatic foundation with warm accent touches
 
 ## Typography System
 
-**Primary Font**: Inter (Google Fonts)
-**Secondary Font**: JetBrains Mono (for financial figures/data)
+**Primary Font**: Inter (Google Fonts) - consistent with Notion's choice
+**Mono Font**: JetBrains Mono (financial data, code-like elements)
 
-**Scale**:
-- Hero Headlines: text-5xl font-bold (48px)
-- Page Titles: text-3xl font-semibold (30px)
-- Section Headers: text-xl font-semibold (20px)
-- Body Text: text-base font-normal (16px)
-- Data Labels: text-sm font-medium (14px)
-- Captions/Metadata: text-xs (12px)
+**Hierarchy**:
+- Page Titles: text-4xl font-bold (36px)
+- Section Headers: text-2xl font-semibold (24px)
+- Block Headers: text-lg font-semibold (18px)
+- Body Text: text-base (16px)
+- Metadata/Labels: text-sm text-gray-600 (14px)
+- Micro-copy: text-xs text-gray-500 (12px)
 
 ## Layout System
 
-**Spacing Primitives**: Tailwind units of 2, 4, 6, 8, 12, 16
-- Component padding: p-4 to p-6
-- Section spacing: py-12 to py-16
-- Card gaps: gap-4 to gap-6
-- Dashboard grid gaps: gap-6
+**Spacing**: Tailwind units 2, 4, 6, 8, 12, 16, 24
+- Block spacing: mb-6 to mb-8
+- Section padding: py-16 to py-24
+- Card internal: p-6 to p-8
+- Sidebar: w-60, collapsible to w-14
 
-**Container Structure**:
-- Dashboard content: max-w-7xl
-- Financial cards: max-w-sm to max-w-md
-- Form sections: max-w-2xl
-- Reading content: max-w-prose
+**Containers**:
+- Main content: max-w-5xl mx-auto
+- Narrow reading: max-w-3xl
+- Wide dashboards: max-w-7xl
+- Form blocks: max-w-2xl
 
-## Core Component Library
+## Core Components
 
 ### Navigation
-**Top Navigation Bar**: Sticky header with logo, main nav links (Dashboard, Finances, Seminars, Scholarships, Internships), user profile dropdown, notification bell icon. Height: h-16, backdrop-blur effect.
 
-**Sidebar Navigation** (Dashboard view): Fixed left sidebar w-64, collapsible to w-16 on smaller screens. Icon + label pattern, active state with subtle background highlight.
+**Sidebar**: Fixed left navigation w-60, semi-transparent background with backdrop-blur. Logo at top, collapsible sections (Workspace, Finances, Academics, Career). Icons left-aligned with labels, hover state shows subtle background fill. Bottom section for user profile with avatar.
 
-### Dashboard Components
+**Top Bar**: Sticky breadcrumb navigation, search bar with ⌘K hint, page actions on right (Share, Settings). Height h-14, minimal border-bottom.
 
-**Financial Summary Cards**: Grid layout (grid-cols-1 md:grid-cols-2 lg:grid-cols-4), rounded-xl borders, p-6 padding. Each card displays metric title, large numerical value (JetBrains Mono), trend indicator (arrow icon + percentage), sparkline chart at bottom.
+### Block-Based Content
 
-**Expense Chart Widget**: Large card spanning 2 columns, h-96, includes time period selector tabs (Month/Quarter/Year), interactive line/bar chart using Chart.js, legend at top-right.
+**Content Blocks**: Each section acts as draggable/reorderable block. Hover reveals drag handle icon on left, action menu (···) on right. Blocks have no borders, separated by whitespace (mb-8). Subtle shadow appears on hover (shadow-sm transition).
 
-**Budget Tracker**: Progress bars with category labels, remaining amount, and percentage consumed. Stack vertically with gap-3.
+**Financial Summary Blocks**: Grid cards without borders, subtle background (bg-gray-50), rounded-xl, p-6. Large metric in JetBrains Mono, small trend indicator below. Mini sparkline at bottom using simple SVG path.
 
-### Seminar Planner Interface
+**Expense Tracker Block**: Full-width block, category rows with labels, inline progress bars (no borders, filled sections with warm accent), amounts right-aligned in mono font. Hover reveals edit/delete icons.
 
-**Calendar View**: Full-width calendar grid with time slots on Y-axis, days on X-axis. Seminar blocks as rounded cards with gradient backgrounds, show title + time + speaker thumbnail. Clicking opens detail modal.
+### Data Displays
 
-**Seminar Cards** (List view): Horizontal cards with left accent border, containing seminar thumbnail (aspect-video), title (text-lg font-semibold), speaker info with avatar, date/time with clock icon, tag pills for category, CTA button "Sign Up" or "View Details".
+**Table Blocks**: Borderless tables, header row with text-sm uppercase text-gray-600, data rows with hover:bg-gray-50. Padding py-3 px-4, subtle divider lines only. Transaction tables show date, category chip, description, amount (mono, right-aligned).
 
-**Schedule Timeline**: Vertical timeline with connecting lines, each node showing seminar time, title, location, quick actions (Add to Calendar, Set Reminder).
+**Calendar View**: Full-width calendar block, minimal grid lines, seminar events as rounded pills with warm accent backgrounds, show only time + title. Click expands inline detail panel.
+
+**Seminar Cards**: Horizontal layout, thumbnail left (aspect-video, rounded-lg), content right with title, speaker name, datetime metadata. Actions (Sign Up, Remind) appear on hover. Entire card clickable with subtle transform on hover.
 
 ### Forms & Inputs
 
-**Financial Input Forms**: Clean two-column layout on desktop, single column mobile. Labels above inputs (text-sm font-medium), input fields with border rounded-lg h-11, helper text below in text-xs. Expense categories as dropdown with icons.
+**Inline Editing**: Clicking text converts to input field, similar to Notion. Input fields have no visible borders until focused, then subtle bottom border appears. Labels inline or above in text-sm.
 
-**Search & Filters**: Search bar with magnifying glass icon, filter chips that are toggleable, sort dropdown aligned right.
+**Block Forms**: Add Expense, Log Study Session forms as expandable blocks. Click "+" button reveals form fields that slide down. Form buttons minimal with subtle hover states.
 
-### Data Tables
+### Modals & Panels
 
-**Transaction History**: Striped rows (subtle), sticky header, columns for Date, Description, Category (with icon), Amount (JetBrains Mono, right-aligned), Actions. Pagination at bottom, 20 rows per page.
+**Detail Panels**: Slide from right (w-1/2 lg:w-2/5), white background, close X top-right. Seminar details, scholarship info shown here with scrollable content, primary action button at bottom.
 
-**Scholarship List**: Card-based table alternative, each scholarship as expandable accordion, showing university logo, deadline, amount, requirements preview, "Learn More" link.
+**AI Note Taker**: Persistent side panel (w-80) that slides in during seminar attendance. Live transcription feed, auto-highlighted key points, download button at bottom.
 
-### Modals & Overlays
+## Page Layouts
 
-**Seminar Details Modal**: Centered modal max-w-3xl, header with close button, scrollable content area with seminar image, full description, speaker bios with headshots, agenda timeline, sign-up form at bottom, backdrop blur.
+### Landing Page (5 Sections)
 
-**AI Note Taker Panel**: Slide-in panel from right, w-96, shows live transcription, key points extraction, action items, download notes button.
+**Hero** (h-screen): Two-column layout. Left: headline text-5xl font-bold, subheading describing platform capabilities, two CTAs (Start Free + View Demo) with blurred backgrounds over hero image. Right: large dashboard screenshot showing actual interface at subtle 3D angle.
 
-### CTAs & Buttons
+**Features Grid**: Four columns (grid-cols-4), each feature with warm accent icon, title, 2-line description. Focus on Finances, Seminars, Scholarships, Internships, Calculator, AI Notes.
 
-**Primary Actions**: Solid buttons, rounded-lg, px-6 py-3, font-medium
-**Secondary Actions**: Outlined buttons, same dimensions
-**Tertiary Actions**: Text-only links with underline on hover
-**Icon Buttons**: Circular, w-10 h-10, centered icon
+**Social Proof**: Student testimonial cards, two-column grid, each with quote, student photo (rounded-full, 64px), name, university in metadata style.
 
-## Page-Specific Layouts
+**Stats Bar**: Single row, four metrics (Active Students, Scholarships Tracked, Avg. Savings, Seminars Listed), large numbers with subtle warm accent.
 
-### Landing/Marketing Page
-
-**Hero Section**: h-screen flex layout, left side (50%) contains headline (text-6xl font-bold), subheading describing both finance and seminar tools, two CTA buttons (Get Started + Watch Demo), right side (50%) shows dashboard preview mockup screenshot at slight angle, subtle floating animation.
-
-**Features Grid**: Three-column grid showcasing 6 key features (Financial Tracking, Seminar Planning, Scholarship Finder, Internship Board, Budget Tools, AI Notes). Each with icon, title, description (2-3 lines).
-
-**Social Proof**: Testimonials from students in two-column grid, each with student photo, quote, name, university.
-
-**Statistics Bar**: Four metrics across (Students Helped, Scholarships Found, Seminars Listed, Average Savings), large numbers with context.
+**Footer**: Multi-column layout (Features, Resources, Company, Connect), newsletter signup block, minimalist design with generous spacing.
 
 ### Dashboard Home
 
-Three-column layout (lg:grid-cols-3): Left column (col-span-2) shows financial overview cards, expense chart, recent transactions. Right column shows upcoming seminars widget, quick actions panel, scholarship matches.
+**Three-column layout**: Sidebar navigation (w-60), main content area (flex-1), quick actions panel (w-80, removable). Main area shows financial overview blocks, upcoming seminars, recent transactions. Top bar with page title "Dashboard" and quick add buttons.
 
 ## Icons & Assets
 
-**Icon Library**: Heroicons (via CDN) for all interface icons
-**Charts**: Chart.js for data visualization
-**Calendar**: FullCalendar library for seminar scheduling
+**Icons**: Heroicons (outline style for navbar, solid for emphasis)
+**Charts**: Chart.js with minimal styling, no gridlines, warm accent fills
+**Illustrations**: None - photo-realistic images only
 
 ## Images
 
-**Landing Hero**: Dashboard mockup showing financial charts and seminar calendar, modern device frame, 1200x800px minimum
-**Seminar Cards**: Speaker headshots, 80x80px circular crops
-**University Logos**: For scholarship listings, 60x60px
-**Student Testimonials**: Authentic student photos, 100x100px circular
+**Landing Hero Image**: Full dashboard interface screenshot (1400x900px) showing real financial charts, seminar calendar, clean Notion-like aesthetic. Presented at 5-degree tilt for depth. Critical for demonstrating actual product.
 
-**Large Hero Image**: Yes, landing page includes prominent dashboard preview mockup
+**Seminar Cards**: Speaker headshots, 60x60px rounded-full
+**Testimonials**: Student portraits, 64x64px rounded-full, authentic college photos
+**University Logos**: Scholarship listings, 48x48px, monochrome treatment
+**Dashboard Screenshots**: Feature section showing specific modules (expense tracker, calendar view)
+
+Large hero image: Yes, essential for product demonstration and trust-building.
 
 ## Accessibility
 
-- Minimum touch targets: 44x44px
-- Form labels always visible (no placeholder-only patterns)
-- Focus indicators with 2px offset rings
-- ARIA labels on icon-only buttons
-- Keyboard navigation for all interactive elements
-- Color-independent status indicators (use icons + text)
+- 44px minimum touch targets
+- Focus rings with warm accent outline
+- Visible labels, never placeholder-only
+- Keyboard shortcuts displayed (⌘K for search)
+- High contrast ratios maintained in monochromatic scheme
+- Screen reader labels for icon buttons
