@@ -872,5 +872,64 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ============ FINANCE TRACKER ============
+  app.get("/api/finance-entries", async (req, res) => {
+    const authUser = req.user as any;
+    if (!authUser?.claims?.sub) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const entries = await storage.getFinanceEntries(authUser.claims.sub);
+      res.json(entries);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch finance entries" });
+    }
+  });
+
+  app.post("/api/finance-entries", async (req, res) => {
+    const authUser = req.user as any;
+    if (!authUser?.claims?.sub) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const entry = await storage.createFinanceEntry({
+        ...req.body,
+        userId: authUser.claims.sub,
+      });
+      res.status(201).json(entry);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create finance entry" });
+    }
+  });
+
+  app.patch("/api/finance-entries/:id", async (req, res) => {
+    const authUser = req.user as any;
+    if (!authUser?.claims?.sub) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const entry = await storage.updateFinanceEntry(parseInt(req.params.id), req.body);
+      if (!entry) {
+        return res.status(404).json({ error: "Entry not found" });
+      }
+      res.json(entry);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update finance entry" });
+    }
+  });
+
+  app.delete("/api/finance-entries/:id", async (req, res) => {
+    const authUser = req.user as any;
+    if (!authUser?.claims?.sub) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      await storage.deleteFinanceEntry(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete finance entry" });
+    }
+  });
+
   return httpServer;
 }

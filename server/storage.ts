@@ -14,8 +14,9 @@ import {
   type ConversationParticipant, type InsertConversationParticipant,
   type Message, type InsertMessage,
   type MessageReaction, type InsertMessageReaction,
+  type FinanceEntry, type InsertFinanceEntry,
   users, expenses, budgets, internships, scholarships, seminars, seminarNotes, entrepreneurContent, calendarEvents,
-  meetingNotes, meetingNoteShares, conversations, conversationParticipants, messages, messageReactions,
+  meetingNotes, meetingNoteShares, conversations, conversationParticipants, messages, messageReactions, financeEntries,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, gte, lte } from "drizzle-orm";
@@ -76,6 +77,11 @@ export interface IStorage {
   getMessageReactions(messageId: number): Promise<MessageReaction[]>;
   addMessageReaction(reaction: InsertMessageReaction): Promise<MessageReaction>;
   removeMessageReaction(id: number): Promise<void>;
+  getFinanceEntries(userId: string): Promise<FinanceEntry[]>;
+  getFinanceEntry(id: number): Promise<FinanceEntry | undefined>;
+  createFinanceEntry(entry: InsertFinanceEntry): Promise<FinanceEntry>;
+  updateFinanceEntry(id: number, entry: Partial<InsertFinanceEntry>): Promise<FinanceEntry | undefined>;
+  deleteFinanceEntry(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -372,6 +378,29 @@ export class DatabaseStorage implements IStorage {
     await db.delete(messages).where(eq(messages.conversationId, id));
     await db.delete(conversationParticipants).where(eq(conversationParticipants.conversationId, id));
     await db.delete(conversations).where(eq(conversations.id, id));
+  }
+
+  async getFinanceEntries(userId: string): Promise<FinanceEntry[]> {
+    return db.select().from(financeEntries).where(eq(financeEntries.userId, userId)).orderBy(desc(financeEntries.date));
+  }
+
+  async getFinanceEntry(id: number): Promise<FinanceEntry | undefined> {
+    const [entry] = await db.select().from(financeEntries).where(eq(financeEntries.id, id));
+    return entry || undefined;
+  }
+
+  async createFinanceEntry(entry: InsertFinanceEntry): Promise<FinanceEntry> {
+    const [newEntry] = await db.insert(financeEntries).values(entry).returning();
+    return newEntry;
+  }
+
+  async updateFinanceEntry(id: number, entry: Partial<InsertFinanceEntry>): Promise<FinanceEntry | undefined> {
+    const [updated] = await db.update(financeEntries).set(entry).where(eq(financeEntries.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteFinanceEntry(id: number): Promise<void> {
+    await db.delete(financeEntries).where(eq(financeEntries.id, id));
   }
 }
 

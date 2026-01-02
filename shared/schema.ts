@@ -415,5 +415,46 @@ export const interestOptions = [
   "Social Sciences"
 ] as const;
 
+// Finance Tracker Entries (Income & Expenses with tags)
+export const financeEntries = pgTable("finance_entries", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  type: text("type").notNull(), // "income" or "expense"
+  source: text("source").notNull(),
+  amount: real("amount").notNull(),
+  tag: text("tag").notNull(),
+  date: timestamp("date").defaultNow().notNull(),
+});
+
+export const insertFinanceEntrySchema = createInsertSchema(financeEntries).omit({
+  id: true,
+});
+
+export type InsertFinanceEntry = z.infer<typeof insertFinanceEntrySchema>;
+export type FinanceEntry = typeof financeEntries.$inferSelect;
+
+// Finance Entry Tags
+export const incomeTagOptions = [
+  "Salary",
+  "Freelance",
+  "Investment",
+  "Scholarship",
+  "Gift",
+  "Other"
+] as const;
+
+export const expenseTagOptions = [
+  "Rent/Mortgage",
+  "Utilities",
+  "Groceries",
+  "Dining Out",
+  "Transportation",
+  "Healthcare",
+  "Entertainment",
+  "Retail",
+  "Education",
+  "Other"
+] as const;
+
 // Re-export sessions from auth model
 export { sessions } from "./models/auth";
