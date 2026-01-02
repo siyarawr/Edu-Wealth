@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { GraduationCap, Wallet, Calendar, MessageCircle, Sparkles, ArrowRight } from "lucide-react";
+import { GraduationCap, Wallet, Calendar, MessageCircle, ArrowRight } from "lucide-react";
+import ewIconPath from "@assets/image_1767372559290.png";
 
 export default function Landing() {
   return (
@@ -8,9 +9,7 @@ export default function Landing() {
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Sparkles className="h-4 w-4" />
-            </div>
+            <img src={ewIconPath} alt="EduWealth" className="h-10 w-10 rounded-full object-contain" />
             <h1 className="text-lg font-semibold">Edu Wealth</h1>
           </div>
           <Button asChild data-testid="button-header-login">
