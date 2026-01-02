@@ -16,7 +16,8 @@ import {
   User,
   MessageCircle,
   FileText,
-  LogOut
+  LogOut,
+  PiggyBank,
 } from "lucide-react";
 import ewIconPath from "@assets/image_1767372559290.png";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ const workspaceItems = [
 ];
 
 const financeItems = [
+  { title: "Finance Tracker", url: "/finance-tracker", icon: PiggyBank },
   { title: "Expenses", url: "/expenses", icon: Wallet },
   { title: "Internships", url: "/internships", icon: Briefcase },
   { title: "Scholarships", url: "/scholarships", icon: GraduationCap },

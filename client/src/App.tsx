@@ -26,6 +26,7 @@ import Profile from "@/pages/profile";
 import Calendar from "@/pages/calendar";
 import SearchPage from "@/pages/search";
 import Landing from "@/pages/landing";
+import FinanceTracker from "@/pages/finance-tracker";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -44,6 +45,7 @@ function Router() {
       <Route path="/profile" component={Profile} />
       <Route path="/calendar" component={Calendar} />
       <Route path="/search" component={SearchPage} />
+      <Route path="/finance-tracker" component={FinanceTracker} />
       <Route component={NotFound} />
     </Switch>
   );
