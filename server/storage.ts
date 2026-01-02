@@ -53,6 +53,8 @@ export interface IStorage {
   getCalendarEvent(id: number): Promise<CalendarEvent | undefined>;
   createCalendarEvent(event: InsertCalendarEvent): Promise<CalendarEvent>;
   updateCalendarEvent(id: number, event: Partial<InsertCalendarEvent>): Promise<CalendarEvent | undefined>;
+  findUserReaction(messageId: number, userId: string, reaction: string): Promise<MessageReaction | undefined>;
+  deleteConversation(id: number): Promise<void>;
   deleteCalendarEvent(id: number): Promise<void>;
   getMeetingNotes(userId: string): Promise<MeetingNote[]>;
   getMeetingNote(id: number): Promise<MeetingNote | undefined>;
@@ -350,6 +352,26 @@ export class DatabaseStorage implements IStorage {
 
   async removeMessageReaction(id: number): Promise<void> {
     await db.delete(messageReactions).where(eq(messageReactions.id, id));
+  }
+
+  async findUserReaction(messageId: number, userId: string, reaction: string): Promise<MessageReaction | undefined> {
+    const [found] = await db.select().from(messageReactions)
+      .where(and(
+        eq(messageReactions.messageId, messageId),
+        eq(messageReactions.userId, userId),
+        eq(messageReactions.reaction, reaction)
+      ));
+    return found || undefined;
+  }
+
+  async deleteConversation(id: number): Promise<void> {
+    const msgs = await this.getMessages(id);
+    for (const msg of msgs) {
+      await db.delete(messageReactions).where(eq(messageReactions.messageId, msg.id));
+    }
+    await db.delete(messages).where(eq(messages.conversationId, id));
+    await db.delete(conversationParticipants).where(eq(conversationParticipants.conversationId, id));
+    await db.delete(conversations).where(eq(conversations.id, id));
   }
 }
 

@@ -3,11 +3,15 @@ import { pgTable, text, varchar, integer, real, timestamp, boolean, serial } fro
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users with full profile
+// Users with full profile (includes Replit Auth fields)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  username: text("username"),
+  password: text("password"),
+  // Replit Auth fields
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  profileImageUrl: text("profile_image_url"),
   // Personal info
   fullName: text("full_name"),
   email: text("email"),
@@ -27,12 +31,21 @@ export const users = pgTable("users", {
   extracurriculars: text("extracurriculars"),
   // Preferences
   isOnboardingComplete: boolean("is_onboarding_complete").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
+  id: true,
   username: true,
   password: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  profileImageUrl: true,
 });
+
+export type UpsertUser = typeof users.$inferInsert;
 
 export const updateUserProfileSchema = createInsertSchema(users).omit({
   id: true,
@@ -401,3 +414,6 @@ export const interestOptions = [
   "Law",
   "Social Sciences"
 ] as const;
+
+// Re-export sessions from auth model
+export { sessions } from "./models/auth";

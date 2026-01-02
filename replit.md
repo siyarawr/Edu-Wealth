@@ -1,10 +1,17 @@
-# StudentHub
+# Edu Wealth
 
 A comprehensive student platform combining financial management and seminar planning.
 
 ## Overview
 
-StudentHub is a full-stack web application designed to help students manage their academic and professional journey. It combines financial tracking, career opportunities, and educational resources in one place.
+Edu Wealth is a full-stack web application designed to help students manage their academic and professional journey. It combines financial tracking, career opportunities, and educational resources in one place.
+
+## Authentication
+
+- Uses Replit Auth (OpenID Connect) for authentication
+- Supports Google, GitHub, Apple, and email/password login
+- Users are redirected to their own account on each login
+- Landing page shown to unauthenticated users
 
 ## Features
 

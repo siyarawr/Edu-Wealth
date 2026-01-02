@@ -119,7 +119,7 @@ export function AppSidebar() {
             <Sparkles className="h-4 w-4" />
           </div>
           <div>
-            <h1 className="text-sm font-semibold">StudentHub</h1>
+            <h1 className="text-sm font-semibold">Edu Wealth</h1>
           </div>
         </div>
         <div className="mt-3 relative">

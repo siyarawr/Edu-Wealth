@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import OpenAI from "openai";
+import { setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -12,6 +13,9 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Setup authentication (BEFORE other routes)
+  await setupAuth(app);
+  registerAuthRoutes(app);
   // ============ USER PROFILE ============
   app.get("/api/user/profile", async (req, res) => {
     try {
@@ -631,6 +635,31 @@ Format your response as JSON with this structure:
     }
   });
 
+  // Toggle reaction (add if not exists, remove if exists)
+  app.post("/api/messages/:id/reactions/toggle", async (req, res) => {
+    try {
+      const messageId = parseInt(req.params.id);
+      const userId = req.body.userId || "default-user";
+      const reactionType = req.body.reaction;
+      
+      const existingReaction = await storage.findUserReaction(messageId, userId, reactionType);
+      
+      if (existingReaction) {
+        await storage.removeMessageReaction(existingReaction.id);
+        res.json({ action: "removed", reactionId: existingReaction.id });
+      } else {
+        const reaction = await storage.addMessageReaction({
+          messageId,
+          userId,
+          reaction: reactionType,
+        });
+        res.status(201).json({ action: "added", reaction });
+      }
+    } catch (error) {
+      res.status(500).json({ error: "Failed to toggle reaction" });
+    }
+  });
+
   app.post("/api/messages/:id/reactions", async (req, res) => {
     try {
       const messageId = parseInt(req.params.id);
@@ -651,6 +680,15 @@ Format your response as JSON with this structure:
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to remove reaction" });
+    }
+  });
+
+  app.delete("/api/conversations/:id", async (req, res) => {
+    try {
+      await storage.deleteConversation(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete conversation" });
     }
   });
 

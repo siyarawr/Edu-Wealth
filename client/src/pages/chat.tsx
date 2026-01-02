@@ -13,6 +13,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
@@ -23,7 +34,8 @@ import {
   Mail,
   MessageCircle,
   Reply,
-  X
+  X,
+  Trash2
 } from "lucide-react";
 import type { Conversation, Message, MessageReaction, ConversationParticipant, User as UserType } from "@shared/schema";
 
@@ -101,21 +113,23 @@ export default function Chat() {
     },
   });
 
-  const addReactionMutation = useMutation({
+  const toggleReactionMutation = useMutation({
     mutationFn: async ({ messageId, reaction }: { messageId: number; reaction: string }) => {
-      return apiRequest("POST", `/api/messages/${messageId}/reactions`, { reaction });
+      return apiRequest("POST", `/api/messages/${messageId}/reactions/toggle`, { reaction });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations", selectedConversation] });
     },
   });
 
-  const removeReactionMutation = useMutation({
-    mutationFn: async ({ messageId, reactionId }: { messageId: number; reactionId: number }) => {
-      return apiRequest("DELETE", `/api/messages/${messageId}/reactions/${reactionId}`);
+  const deleteConversationMutation = useMutation({
+    mutationFn: async (conversationId: number) => {
+      return apiRequest("DELETE", `/api/conversations/${conversationId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations", selectedConversation] });
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      setSelectedConversation(null);
+      toast({ title: "Chat deleted", description: "The conversation has been permanently deleted." });
     },
   });
 
@@ -226,43 +240,75 @@ export default function Chat() {
                   </p>
                 </div>
               </div>
-              <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" data-testid="button-invite-to-chat">
-                    <Mail className="h-4 w-4 mr-2" />
-                    Invite via Email
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Invite to Chat</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <p className="text-sm text-muted-foreground">
-                      Send an email invitation to start a secure 1-1 conversation.
-                    </p>
-                    <Input
-                      type="email"
-                      placeholder="colleague@email.com"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      data-testid="input-invite-email"
-                    />
-                    <Button
-                      onClick={() => {
-                        if (selectedConversation && inviteEmail) {
-                          inviteMutation.mutate({ conversationId: selectedConversation, email: inviteEmail });
-                        }
-                      }}
-                      disabled={!inviteEmail || inviteMutation.isPending}
-                      className="w-full"
-                      data-testid="button-send-chat-invite"
-                    >
-                      {inviteMutation.isPending ? "Sending..." : "Send Invitation"}
+              <div className="flex items-center gap-2">
+                <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" data-testid="button-invite-to-chat">
+                      <Mail className="h-4 w-4 mr-2" />
+                      Invite via Email
                     </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Invite to Chat</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                      <p className="text-sm text-muted-foreground">
+                        Send an email invitation to start a secure 1-1 conversation.
+                      </p>
+                      <Input
+                        type="email"
+                        placeholder="colleague@email.com"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                        data-testid="input-invite-email"
+                      />
+                      <Button
+                        onClick={() => {
+                          if (selectedConversation && inviteEmail) {
+                            inviteMutation.mutate({ conversationId: selectedConversation, email: inviteEmail });
+                          }
+                        }}
+                        disabled={!inviteEmail || inviteMutation.isPending}
+                        className="w-full"
+                        data-testid="button-send-chat-invite"
+                      >
+                        {inviteMutation.isPending ? "Sending..." : "Send Invitation"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" data-testid="button-delete-chat">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Chat
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the entire conversation including all messages, reactions, and shared content.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          if (selectedConversation) {
+                            deleteConversationMutation.mutate(selectedConversation);
+                          }
+                        }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        data-testid="button-confirm-delete-chat"
+                      >
+                        Yes, Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
 
             <ScrollArea className="flex-1 p-4">
@@ -300,21 +346,23 @@ export default function Chat() {
                           </p>
                         </div>
                         <div className="flex items-center gap-1 mt-1">
-                          {message.reactions?.map((r) => (
-                            <button
-                              key={r.id}
-                              onClick={() => removeReactionMutation.mutate({ messageId: message.id, reactionId: r.id })}
-                              className="p-1 rounded hover:bg-muted"
-                              data-testid={`reaction-${r.id}`}
-                            >
-                              {r.reaction === "heart" ? <Heart className="h-3 w-3 text-red-500 fill-red-500" /> : <ThumbsUp className="h-3 w-3 text-blue-500 fill-blue-500" />}
-                            </button>
-                          ))}
+                          {message.reactions && message.reactions.filter(r => r.reaction === "heart").length > 0 && (
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                              <Heart className="h-3 w-3 text-red-500 fill-red-500 mr-1" />
+                              {message.reactions.filter(r => r.reaction === "heart").length}
+                            </Badge>
+                          )}
+                          {message.reactions && message.reactions.filter(r => r.reaction === "thumbs_up").length > 0 && (
+                            <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                              <ThumbsUp className="h-3 w-3 text-blue-500 fill-blue-500 mr-1" />
+                              {message.reactions.filter(r => r.reaction === "thumbs_up").length}
+                            </Badge>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6"
-                            onClick={() => addReactionMutation.mutate({ messageId: message.id, reaction: "heart" })}
+                            onClick={() => toggleReactionMutation.mutate({ messageId: message.id, reaction: "heart" })}
                             data-testid={`button-react-heart-${message.id}`}
                           >
                             <Heart className="h-3 w-3" />
@@ -323,7 +371,7 @@ export default function Chat() {
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6"
-                            onClick={() => addReactionMutation.mutate({ messageId: message.id, reaction: "thumbs_up" })}
+                            onClick={() => toggleReactionMutation.mutate({ messageId: message.id, reaction: "thumbs_up" })}
                             data-testid={`button-react-thumbsup-${message.id}`}
                           >
                             <ThumbsUp className="h-3 w-3" />

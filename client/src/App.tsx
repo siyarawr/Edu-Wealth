@@ -9,6 +9,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/hooks/use-auth";
+import { Loader2 } from "lucide-react";
 
 import Dashboard from "@/pages/dashboard";
 import Expenses from "@/pages/expenses";
@@ -22,6 +24,7 @@ import MeetingNotes from "@/pages/meeting-notes";
 import Chat from "@/pages/chat";
 import Profile from "@/pages/profile";
 import Calendar from "@/pages/calendar";
+import Landing from "@/pages/landing";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -44,12 +47,12 @@ function Router() {
   );
 }
 
-const SIDEBAR_WIDTH_KEY = "studenthub-sidebar-width";
+const SIDEBAR_WIDTH_KEY = "eduwealth-sidebar-width";
 const DEFAULT_SIDEBAR_WIDTH = 240;
 const MIN_SIDEBAR_WIDTH = 180;
 const MAX_SIDEBAR_WIDTH = 400;
 
-function App() {
+function AuthenticatedApp() {
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
 
   useEffect(() => {
@@ -94,30 +97,54 @@ function App() {
   };
 
   return (
+    <SidebarProvider style={style as React.CSSProperties}>
+      <div className="flex h-screen w-full bg-background">
+        <AppSidebar />
+        <div
+          className="w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
+          onMouseDown={handleMouseDown}
+          data-testid="sidebar-resize-handle"
+        />
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <header className="flex items-center justify-between gap-4 px-4 h-12 border-b border-border/50 bg-background sticky top-0 z-50">
+            <SidebarTrigger data-testid="button-sidebar-toggle" />
+            <ThemeToggle />
+          </header>
+          <ScrollArea className="flex-1">
+            <main className="min-h-full">
+              <Router />
+            </main>
+          </ScrollArea>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+}
+
+function AppContent() {
+  const { user, isLoading, isAuthenticated } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Landing />;
+  }
+
+  return <AuthenticatedApp />;
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <TooltipProvider>
-          <SidebarProvider style={style as React.CSSProperties}>
-            <div className="flex h-screen w-full bg-background">
-              <AppSidebar />
-              <div
-                className="w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
-                onMouseDown={handleMouseDown}
-                data-testid="sidebar-resize-handle"
-              />
-              <div className="flex flex-col flex-1 overflow-hidden">
-                <header className="flex items-center justify-between gap-4 px-4 h-12 border-b border-border/50 bg-background sticky top-0 z-50">
-                  <SidebarTrigger data-testid="button-sidebar-toggle" />
-                  <ThemeToggle />
-                </header>
-                <ScrollArea className="flex-1">
-                  <main className="min-h-full">
-                    <Router />
-                  </main>
-                </ScrollArea>
-              </div>
-            </div>
-          </SidebarProvider>
+          <AppContent />
           <Toaster />
         </TooltipProvider>
       </ThemeProvider>
