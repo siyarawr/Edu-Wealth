@@ -588,8 +588,6 @@ Format your response as JSON with this structure:
       }
       const expenses = await storage.getExpenses(userId);
       const seminars = await storage.getSeminars();
-      const internships = await storage.getInternships();
-      const scholarships = await storage.getScholarships();
       const user = await storage.getUser(userId);
 
       const now = new Date();
@@ -599,7 +597,32 @@ Format your response as JSON with this structure:
       });
 
       const totalSpent = thisMonth.reduce((sum, e) => sum + e.amount, 0);
-      const upcomingSeminars = seminars.filter((s) => new Date(s.date) > now).slice(0, 5);
+      
+      // Filter seminars by user interests for personalization
+      const userInterests = user?.interests?.toLowerCase().split(",").map(i => i.trim()) || [];
+      let upcomingSeminars = seminars.filter((s) => new Date(s.date) > now);
+      
+      // If user has interests, prioritize matching seminars
+      if (userInterests.length > 0 && userInterests[0] !== "") {
+        const matchingSeminars = upcomingSeminars.filter((s) => {
+          const category = s.category.toLowerCase();
+          const title = s.title.toLowerCase();
+          const description = s.description?.toLowerCase() || "";
+          return userInterests.some(interest => 
+            category.includes(interest) || 
+            title.includes(interest) || 
+            description.includes(interest) ||
+            interest.includes(category.split(" ")[0])
+          );
+        });
+        // Show matching seminars first, then others
+        upcomingSeminars = [
+          ...matchingSeminars,
+          ...upcomingSeminars.filter(s => !matchingSeminars.includes(s))
+        ];
+      }
+      
+      upcomingSeminars = upcomingSeminars.slice(0, 5);
       
       const monthlyBudget = user?.monthlyBudget || 0;
       const monthlyIncome = user?.monthlyIncome || 0;
@@ -610,8 +633,6 @@ Format your response as JSON with this structure:
         totalSpent,
         expenseCount: thisMonth.length,
         upcomingSeminarsCount: upcomingSeminars.length,
-        internshipCount: internships.length,
-        scholarshipCount: scholarships.length,
         upcomingSeminars,
         monthlyBudget,
         monthlyIncome,

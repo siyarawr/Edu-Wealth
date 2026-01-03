@@ -11,10 +11,7 @@ import {
   Target,
   Calendar,
   ArrowRight,
-  Briefcase,
-  GraduationCap,
   Clock,
-  MapPin,
   Users,
   User,
   AlertCircle
@@ -28,14 +25,12 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { Internship, Seminar, Expense, Budget, User as UserType } from "@shared/schema";
+import type { Seminar, Expense, Budget, User as UserType } from "@shared/schema";
 
 interface DashboardStats {
   totalSpent: number;
   expenseCount: number;
   upcomingSeminarsCount: number;
-  internshipCount: number;
-  scholarshipCount: number;
   upcomingSeminars: Seminar[];
   monthlyBudget: number;
   monthlyIncome: number;
@@ -51,10 +46,6 @@ export default function Dashboard() {
 
   const { data: userProfile } = useQuery<UserType>({
     queryKey: ["/api/user/profile"],
-  });
-
-  const { data: internships = [], isLoading: internshipsLoading } = useQuery<Internship[]>({
-    queryKey: ["/api/internships"],
   });
 
   const { data: expenses = [] } = useQuery<Expense[]>({
@@ -106,7 +97,6 @@ export default function Dashboard() {
   const hasProfile = stats?.hasProfile || false;
 
   const upcomingSeminars = stats?.upcomingSeminars?.slice(0, 3) || [];
-  const recentInternships = internships.slice(0, 3);
 
   const formatDate = (dateString: string | Date) => {
     const date = new Date(dateString);
@@ -118,7 +108,7 @@ export default function Dashboard() {
     return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
   };
 
-  if (statsLoading || internshipsLoading) {
+  if (statsLoading) {
     return (
       <div className="p-8 space-y-8 max-w-5xl mx-auto">
         <div>
@@ -298,97 +288,53 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="p-6 rounded-xl bg-card">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
-              Upcoming Seminars
-            </h2>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/seminars">View All</Link>
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {upcomingSeminars.length > 0 ? (
-              upcomingSeminars.map((seminar) => (
-                <div
-                  key={seminar.id}
-                  className="flex items-start gap-3 p-3 rounded-lg hover-elevate group"
-                  data-testid={`card-seminar-${seminar.id}`}
-                >
-                  <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary text-center flex-shrink-0">
-                    <span className="text-xs font-medium">{formatDate(seminar.date).split(" ")[0]}</span>
-                    <span className="text-lg font-bold leading-none">{formatDate(seminar.date).split(" ")[1]}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{seminar.title}</p>
-                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                      <Users className="h-3 w-3" />
-                      <span className="truncate">{seminar.speaker}</span>
-                      <Clock className="h-3 w-3 ml-2" />
-                      <span>{formatTime(seminar.date)}</span>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="flex-shrink-0 text-xs">
-                    {seminar.category}
-                  </Badge>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No upcoming seminars
-              </p>
-            )}
-          </div>
+      <div className="p-6 rounded-xl bg-card">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            Recommended Seminars
+          </h2>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/seminars">View All</Link>
+          </Button>
         </div>
-
-        <div className="p-6 rounded-xl bg-card">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Briefcase className="h-5 w-5 text-primary" />
-              New Internships
-            </h2>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/internships">View All</Link>
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {recentInternships.length > 0 ? (
-              recentInternships.map((internship) => (
-                <div
-                  key={internship.id}
-                  className="flex items-start gap-3 p-3 rounded-lg hover-elevate group"
-                  data-testid={`card-internship-${internship.id}`}
-                >
-                  <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-chart-2/10 text-chart-2 text-xl font-bold flex-shrink-0">
-                    {internship.company.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{internship.title}</p>
-                    <p className="text-sm text-muted-foreground">{internship.company}</p>
-                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      <span>{internship.location}</span>
-                    </div>
-                  </div>
-                  {internship.isRemote && (
-                    <Badge variant="secondary" className="flex-shrink-0 text-xs">Remote</Badge>
-                  )}
+        <div className="space-y-2">
+          {upcomingSeminars.length > 0 ? (
+            upcomingSeminars.map((seminar) => (
+              <div
+                key={seminar.id}
+                className="flex items-start gap-3 p-3 rounded-lg hover-elevate group"
+                data-testid={`card-seminar-${seminar.id}`}
+              >
+                <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary text-center flex-shrink-0">
+                  <span className="text-xs font-medium">{formatDate(seminar.date).split(" ")[0]}</span>
+                  <span className="text-lg font-bold leading-none">{formatDate(seminar.date).split(" ")[1]}</span>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No internships available
-              </p>
-            )}
-          </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{seminar.title}</p>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                    <Users className="h-3 w-3" />
+                    <span className="truncate">{seminar.speaker}</span>
+                    <Clock className="h-3 w-3 ml-2" />
+                    <span>{formatTime(seminar.date)}</span>
+                  </div>
+                </div>
+                <Badge variant="outline" className="flex-shrink-0 text-xs">
+                  {seminar.category}
+                </Badge>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              No upcoming seminars matching your interests
+            </p>
+          )}
         </div>
       </div>
 
       <div className="p-6 rounded-xl bg-card">
         <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <Button variant="outline" className="h-auto flex-col py-4 gap-2" asChild>
             <Link href="/expenses">
               <DollarSign className="h-5 w-5" />
@@ -396,15 +342,9 @@ export default function Dashboard() {
             </Link>
           </Button>
           <Button variant="outline" className="h-auto flex-col py-4 gap-2" asChild>
-            <Link href="/scholarships">
-              <GraduationCap className="h-5 w-5" />
-              <span className="text-sm">Scholarships</span>
-            </Link>
-          </Button>
-          <Button variant="outline" className="h-auto flex-col py-4 gap-2" asChild>
-            <Link href="/acceptance">
-              <Target className="h-5 w-5" />
-              <span className="text-sm">Acceptance Rate</span>
+            <Link href="/finance-reminders">
+              <Clock className="h-5 w-5" />
+              <span className="text-sm">Reminders</span>
             </Link>
           </Button>
           <Button variant="outline" className="h-auto flex-col py-4 gap-2" asChild>

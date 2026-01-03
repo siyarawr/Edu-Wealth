@@ -6,7 +6,6 @@ import {
   Wallet,
   Calendar,
   CalendarDays,
-  Lightbulb,
   BookOpen,
   ChevronRight,
   Search,
@@ -55,7 +54,6 @@ const academicsItems = [
   { title: "Seminars", url: "/seminars", icon: Calendar },
   { title: "My Notes", url: "/notes", icon: BookOpen },
   { title: "Meeting Notes", url: "/meeting-notes", icon: FileText },
-  { title: "Entrepreneurship", url: "/entrepreneurship", icon: Lightbulb },
 ];
 
 const communicationItems = [
