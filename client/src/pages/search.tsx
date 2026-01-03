@@ -13,9 +13,18 @@ import {
   GraduationCap,
   Briefcase,
   Lightbulb,
-  Loader2
+  Loader2,
+  Wallet,
+  Bell,
+  FileEdit,
+  ClipboardList,
+  MessageCircle
 } from "lucide-react";
-import type { Seminar, SeminarNote, MeetingNote, Scholarship, Internship, EntrepreneurContent } from "@shared/schema";
+import type { Seminar, SeminarNote, MeetingNote, Scholarship, Internship, EntrepreneurContent, Expense, FinanceReminder, Page, Assignment, Conversation, Message } from "@shared/schema";
+
+interface ConversationWithMessages extends Conversation {
+  messages: Message[];
+}
 
 interface SearchResults {
   seminars: Seminar[];
@@ -24,6 +33,11 @@ interface SearchResults {
   scholarships: Scholarship[];
   internships: Internship[];
   entrepreneurContent: EntrepreneurContent[];
+  expenses: Expense[];
+  financeReminders: FinanceReminder[];
+  pages: Page[];
+  assignments: Assignment[];
+  conversations: ConversationWithMessages[];
 }
 
 export default function SearchPage() {
@@ -61,7 +75,12 @@ export default function SearchPage() {
     results.meetingNotes?.length > 0 ||
     results.scholarships?.length > 0 ||
     results.internships?.length > 0 ||
-    results.entrepreneurContent?.length > 0
+    results.entrepreneurContent?.length > 0 ||
+    results.expenses?.length > 0 ||
+    results.financeReminders?.length > 0 ||
+    results.pages?.length > 0 ||
+    results.assignments?.length > 0 ||
+    results.conversations?.length > 0
   );
 
   return (
@@ -245,6 +264,135 @@ export default function SearchPage() {
                         {content.category && (
                           <Badge variant="outline" className="mt-2">{content.category}</Badge>
                         )}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {results?.expenses && results.expenses.length > 0 && (
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3">
+                <Wallet className="h-5 w-5 text-primary" />
+                Expenses
+                <Badge variant="secondary">{results.expenses.length}</Badge>
+              </h2>
+              <div className="space-y-2">
+                {results.expenses.map((expense) => (
+                  <Link key={expense.id} href="/expenses">
+                    <Card className="hover-elevate cursor-pointer" data-testid={`search-result-expense-${expense.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-medium">{expense.description || expense.category}</h3>
+                          <span className="font-mono text-sm">${expense.amount.toFixed(2)}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {expense.category} - {new Date(expense.date).toLocaleDateString()}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {results?.financeReminders && results.financeReminders.length > 0 && (
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3">
+                <Bell className="h-5 w-5 text-primary" />
+                Finance Reminders
+                <Badge variant="secondary">{results.financeReminders.length}</Badge>
+              </h2>
+              <div className="space-y-2">
+                {results.financeReminders.map((reminder) => (
+                  <Link key={reminder.id} href="/finance-reminders">
+                    <Card className="hover-elevate cursor-pointer" data-testid={`search-result-reminder-${reminder.id}`}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between gap-2">
+                          <h3 className="font-medium">{reminder.title}</h3>
+                          {reminder.amount && <span className="font-mono text-sm">${reminder.amount.toFixed(2)}</span>}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {reminder.category} - Due: {new Date(reminder.dueDate).toLocaleDateString()}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {results?.pages && results.pages.length > 0 && (
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3">
+                <FileEdit className="h-5 w-5 text-primary" />
+                Pages
+                <Badge variant="secondary">{results.pages.length}</Badge>
+              </h2>
+              <div className="space-y-2">
+                {results.pages.map((page) => (
+                  <Link key={page.id} href="/pages">
+                    <Card className="hover-elevate cursor-pointer" data-testid={`search-result-page-${page.id}`}>
+                      <CardContent className="p-4">
+                        <h3 className="font-medium flex items-center gap-2">
+                          <span>{page.emoji || "📄"}</span>
+                          {page.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{page.content}</p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {results?.assignments && results.assignments.length > 0 && (
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3">
+                <ClipboardList className="h-5 w-5 text-primary" />
+                Assignments
+                <Badge variant="secondary">{results.assignments.length}</Badge>
+              </h2>
+              <div className="space-y-2">
+                {results.assignments.map((assignment) => (
+                  <Link key={assignment.id} href="/assignments">
+                    <Card className="hover-elevate cursor-pointer" data-testid={`search-result-assignment-${assignment.id}`}>
+                      <CardContent className="p-4">
+                        <h3 className="font-medium">{assignment.title}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {assignment.status} {assignment.dueDate && `- Due: ${new Date(assignment.dueDate).toLocaleDateString()}`}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {results?.conversations && results.conversations.length > 0 && (
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-semibold mb-3">
+                <MessageCircle className="h-5 w-5 text-primary" />
+                Lists
+                <Badge variant="secondary">{results.conversations.length}</Badge>
+              </h2>
+              <div className="space-y-2">
+                {results.conversations.map((conv) => (
+                  <Link key={conv.id} href="/chat">
+                    <Card className="hover-elevate cursor-pointer" data-testid={`search-result-conversation-${conv.id}`}>
+                      <CardContent className="p-4">
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {conv.messages?.[0]?.content || "No messages"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {conv.messages?.length || 0} message(s)
+                        </p>
                       </CardContent>
                     </Card>
                   </Link>
