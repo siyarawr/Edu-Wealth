@@ -49,8 +49,9 @@ import {
   Trash2,
   Tag
 } from "lucide-react";
-import type { SeminarNote, Seminar } from "@shared/schema";
+import type { SeminarNote, Seminar, User } from "@shared/schema";
 import jsPDF from "jspdf";
+import { Crown } from "lucide-react";
 
 const noteCategories = ["General", "Career", "Technology", "Finance", "Personal Development", "Business"];
 
@@ -75,6 +76,12 @@ export default function Notes() {
   const { data: seminars = [] } = useQuery<Seminar[]>({
     queryKey: ["/api/seminars"],
   });
+
+  const { data: user } = useQuery<User>({
+    queryKey: ["/api/user/profile"],
+  });
+
+  const isPremium = user?.isPremium ?? false;
 
   const generateNotesMutation = useMutation({
     mutationFn: async (data: { transcript: string; title: string; category: string }) => {
@@ -546,69 +553,92 @@ export default function Notes() {
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-primary" />
               <h2 className="font-semibold">AI Note Taker</h2>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Paste text and AI will extract key points and action items.
-            </p>
-            <div className="space-y-3 mb-3">
-              <div>
-                <Label className="text-xs">Title</Label>
-                <Input
-                  placeholder="Note title..."
-                  className="mt-1 bg-muted/50 border-0"
-                  value={noteTitle}
-                  onChange={(e) => setNoteTitle(e.target.value)}
-                  data-testid="input-note-title"
-                />
-              </div>
-              <div>
-                <Label className="text-xs">Category</Label>
-                <Select value={noteCategory} onValueChange={setNoteCategory}>
-                  <SelectTrigger className="mt-1 bg-muted/50 border-0" data-testid="select-note-category">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {noteCategories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-xs">Transcript</Label>
-                <Textarea
-                  placeholder="Paste transcript or notes here..."
-                  className="mt-1 min-h-28 bg-muted/50 border-0"
-                  value={aiInput}
-                  onChange={(e) => setAiInput(e.target.value)}
-                  data-testid="textarea-ai-input"
-                />
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => generateNotesMutation.mutate({ 
-                transcript: aiInput, 
-                title: noteTitle || "Untitled Note", 
-                category: noteCategory 
-              })}
-              disabled={generateNotesMutation.isPending || !aiInput.trim()}
-              data-testid="button-generate-notes"
-            >
-              {generateNotesMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Generate Notes
-                </>
+              {isPremium && (
+                <Badge variant="secondary" className="gap-1 ml-auto">
+                  <Crown className="h-3 w-3" />
+                  Premium
+                </Badge>
               )}
-            </Button>
+            </div>
+            
+            {isPremium ? (
+              <>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Paste text and AI will extract key points and action items.
+                </p>
+                <div className="space-y-3 mb-3">
+                  <div>
+                    <Label className="text-xs">Title</Label>
+                    <Input
+                      placeholder="Note title..."
+                      className="mt-1 bg-muted/50 border-0"
+                      value={noteTitle}
+                      onChange={(e) => setNoteTitle(e.target.value)}
+                      data-testid="input-note-title"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Category</Label>
+                    <Select value={noteCategory} onValueChange={setNoteCategory}>
+                      <SelectTrigger className="mt-1 bg-muted/50 border-0" data-testid="select-note-category">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {noteCategories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs">Transcript</Label>
+                    <Textarea
+                      placeholder="Paste transcript or notes here..."
+                      className="mt-1 min-h-28 bg-muted/50 border-0"
+                      value={aiInput}
+                      onChange={(e) => setAiInput(e.target.value)}
+                      data-testid="textarea-ai-input"
+                    />
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => generateNotesMutation.mutate({ 
+                    transcript: aiInput, 
+                    title: noteTitle || "Untitled Note", 
+                    category: noteCategory 
+                  })}
+                  disabled={generateNotesMutation.isPending || !aiInput.trim()}
+                  data-testid="button-generate-notes"
+                >
+                  {generateNotesMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate Notes
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <div className="text-center py-4">
+                <Crown className="h-10 w-10 mx-auto text-amber-500 mb-3" />
+                <h3 className="font-medium mb-2">Premium Feature</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Upgrade to Premium to unlock AI-powered note generation from your text and transcripts.
+                </p>
+                <Badge variant="outline" className="gap-1">
+                  <Crown className="h-3 w-3 text-amber-500" />
+                  Coming Soon
+                </Badge>
+              </div>
+            )}
           </div>
 
           <div className="p-5 rounded-xl bg-card">

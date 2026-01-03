@@ -332,6 +332,13 @@ export async function registerRoutes(
       if (!userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
+      
+      // Check if user has premium
+      const user = await storage.getUser(userId);
+      if (!user?.isPremium) {
+        return res.status(403).json({ error: "Premium subscription required for AI notes" });
+      }
+      
       const { transcript, seminarId, title, category } = req.body;
 
       if (!transcript) {

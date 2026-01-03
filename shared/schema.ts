@@ -50,6 +50,7 @@ export const users = pgTable("users", {
   extracurriculars: text("extracurriculars"),
   // Preferences
   isOnboardingComplete: boolean("is_onboarding_complete").default(false),
+  isPremium: boolean("is_premium").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
