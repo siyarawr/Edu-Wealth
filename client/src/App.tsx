@@ -14,9 +14,7 @@ import { Loader2 } from "lucide-react";
 
 import Dashboard from "@/pages/dashboard";
 import Expenses from "@/pages/expenses";
-import Internships from "@/pages/internships";
-import Scholarships from "@/pages/scholarships";
-import AcceptanceCalculator from "@/pages/acceptance";
+import FinanceReminders from "@/pages/finance-reminders";
 import Entrepreneurship from "@/pages/entrepreneurship";
 import Seminars from "@/pages/seminars";
 import Notes from "@/pages/notes";
@@ -35,9 +33,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/expenses" component={Expenses} />
-      <Route path="/internships" component={Internships} />
-      <Route path="/scholarships" component={Scholarships} />
-      <Route path="/acceptance" component={AcceptanceCalculator} />
+      <Route path="/finance-reminders" component={FinanceReminders} />
       <Route path="/entrepreneurship" component={Entrepreneurship} />
       <Route path="/seminars" component={Seminars} />
       <Route path="/notes" component={Notes} />

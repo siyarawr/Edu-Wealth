@@ -92,6 +92,29 @@ export const insertBudgetSchema = createInsertSchema(budgets).omit({
 export type InsertBudget = z.infer<typeof insertBudgetSchema>;
 export type Budget = typeof budgets.$inferSelect;
 
+// Finance Reminders - Track when finances are due
+export const financeReminders = pgTable("finance_reminders", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  title: text("title").notNull(),
+  amount: real("amount"),
+  dueDate: timestamp("due_date").notNull(),
+  category: text("category").notNull(),
+  notes: text("notes"),
+  isPaid: boolean("is_paid").default(false),
+  isRecurring: boolean("is_recurring").default(false),
+  recurringFrequency: text("recurring_frequency"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertFinanceReminderSchema = createInsertSchema(financeReminders).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertFinanceReminder = z.infer<typeof insertFinanceReminderSchema>;
+export type FinanceReminder = typeof financeReminders.$inferSelect;
+
 // Internships
 export const internships = pgTable("internships", {
   id: serial("id").primaryKey(),

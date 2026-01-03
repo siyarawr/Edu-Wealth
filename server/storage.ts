@@ -15,8 +15,9 @@ import {
   type Message, type InsertMessage,
   type MessageReaction, type InsertMessageReaction,
   type FinanceEntry, type InsertFinanceEntry,
+  type FinanceReminder, type InsertFinanceReminder,
   users, expenses, budgets, internships, scholarships, seminars, seminarNotes, entrepreneurContent, calendarEvents,
-  meetingNotes, meetingNoteShares, conversations, conversationParticipants, messages, messageReactions, financeEntries,
+  meetingNotes, meetingNoteShares, conversations, conversationParticipants, messages, messageReactions, financeEntries, financeReminders,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, gte, lte } from "drizzle-orm";
@@ -83,6 +84,11 @@ export interface IStorage {
   createFinanceEntry(entry: InsertFinanceEntry): Promise<FinanceEntry>;
   updateFinanceEntry(id: number, entry: Partial<InsertFinanceEntry>): Promise<FinanceEntry | undefined>;
   deleteFinanceEntry(id: number): Promise<void>;
+  getFinanceReminders(userId: string): Promise<FinanceReminder[]>;
+  getFinanceReminder(id: number): Promise<FinanceReminder | undefined>;
+  createFinanceReminder(reminder: InsertFinanceReminder): Promise<FinanceReminder>;
+  updateFinanceReminder(id: number, reminder: Partial<InsertFinanceReminder>): Promise<FinanceReminder | undefined>;
+  deleteFinanceReminder(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -407,6 +413,29 @@ export class DatabaseStorage implements IStorage {
 
   async deleteFinanceEntry(id: number): Promise<void> {
     await db.delete(financeEntries).where(eq(financeEntries.id, id));
+  }
+
+  async getFinanceReminders(userId: string): Promise<FinanceReminder[]> {
+    return db.select().from(financeReminders).where(eq(financeReminders.userId, userId)).orderBy(financeReminders.dueDate);
+  }
+
+  async getFinanceReminder(id: number): Promise<FinanceReminder | undefined> {
+    const [reminder] = await db.select().from(financeReminders).where(eq(financeReminders.id, id));
+    return reminder || undefined;
+  }
+
+  async createFinanceReminder(reminder: InsertFinanceReminder): Promise<FinanceReminder> {
+    const [newReminder] = await db.insert(financeReminders).values(reminder).returning();
+    return newReminder;
+  }
+
+  async updateFinanceReminder(id: number, reminder: Partial<InsertFinanceReminder>): Promise<FinanceReminder | undefined> {
+    const [updated] = await db.update(financeReminders).set(reminder).where(eq(financeReminders.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteFinanceReminder(id: number): Promise<void> {
+    await db.delete(financeReminders).where(eq(financeReminders.id, id));
   }
 }
 

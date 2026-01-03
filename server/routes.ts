@@ -145,6 +145,67 @@ export async function registerRoutes(
     }
   });
 
+  // ============ FINANCE REMINDERS ============
+  app.get("/api/finance-reminders", async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const reminders = await storage.getFinanceReminders(userId);
+      res.json(reminders);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch finance reminders" });
+    }
+  });
+
+  app.post("/api/finance-reminders", async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const reminder = await storage.createFinanceReminder({
+        ...req.body,
+        userId,
+        dueDate: new Date(req.body.dueDate),
+      });
+      res.status(201).json(reminder);
+    } catch (error) {
+      console.error("Create finance reminder error:", error);
+      res.status(500).json({ error: "Failed to create finance reminder" });
+    }
+  });
+
+  app.patch("/api/finance-reminders/:id", async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const reminder = await storage.updateFinanceReminder(parseInt(req.params.id), req.body);
+      if (!reminder) {
+        return res.status(404).json({ error: "Finance reminder not found" });
+      }
+      res.json(reminder);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update finance reminder" });
+    }
+  });
+
+  app.delete("/api/finance-reminders/:id", async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      await storage.deleteFinanceReminder(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete finance reminder" });
+    }
+  });
+
   // ============ INTERNSHIPS ============
   app.get("/api/internships", async (req, res) => {
     try {

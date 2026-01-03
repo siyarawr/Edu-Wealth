@@ -6,10 +6,7 @@ import {
   Wallet,
   Calendar,
   CalendarDays,
-  GraduationCap,
-  Briefcase,
   Lightbulb,
-  Calculator,
   BookOpen,
   ChevronRight,
   Search,
@@ -51,9 +48,7 @@ const workspaceItems = [
 const financeItems = [
   { title: "Finance Tracker", url: "/finance-tracker", icon: PiggyBank },
   { title: "Expenses", url: "/expenses", icon: Wallet },
-  { title: "Internships", url: "/internships", icon: Briefcase },
-  { title: "Scholarships", url: "/scholarships", icon: GraduationCap },
-  { title: "Acceptance Rate", url: "/acceptance", icon: Calculator },
+  { title: "Finance Reminders", url: "/finance-reminders", icon: Calendar },
 ];
 
 const academicsItems = [
