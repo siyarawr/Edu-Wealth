@@ -51,6 +51,8 @@ export const users = pgTable("users", {
   // Preferences
   isOnboardingComplete: boolean("is_onboarding_complete").default(false),
   isPremium: boolean("is_premium").default(false),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -501,3 +503,81 @@ export const expenseTagOptions = [
 
 // Re-export sessions from auth model
 export { sessions } from "./models/auth";
+
+// Pages (document-like notes)
+export const pages = pgTable("pages", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  title: text("title").notNull(),
+  content: text("content").default(""),
+  emoji: text("emoji").default("📄"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPageSchema = createInsertSchema(pages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertPage = z.infer<typeof insertPageSchema>;
+export type Page = typeof pages.$inferSelect;
+
+// Assignment Tracker - Courses
+export const assignmentCourses = pgTable("assignment_courses", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  emoji: text("emoji").default("📚"),
+  name: text("name").notNull(),
+  instructor: text("instructor"),
+  targetGrade: real("target_grade"),
+  credits: real("credits"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAssignmentCourseSchema = createInsertSchema(assignmentCourses).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAssignmentCourse = z.infer<typeof insertAssignmentCourseSchema>;
+export type AssignmentCourse = typeof assignmentCourses.$inferSelect;
+
+// Assignment Tracker - Assignments
+export const assignments = pgTable("assignments", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  courseId: integer("course_id"),
+  title: text("title").notNull(),
+  status: text("status").default("pending"), // pending, in_progress, submitted, graded
+  dueDate: timestamp("due_date"),
+  submittedAt: timestamp("submitted_at"),
+  priority: text("priority").default("medium"), // low, medium, high
+  weight: real("weight"), // percentage weight
+  gradePercent: real("grade_percent"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAssignmentSchema = createInsertSchema(assignments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAssignment = z.infer<typeof insertAssignmentSchema>;
+export type Assignment = typeof assignments.$inferSelect;
+
+// Assignment status options
+export const assignmentStatusOptions = [
+  "pending",
+  "in_progress",
+  "submitted",
+  "graded"
+] as const;
+
+export const priorityOptions = [
+  "low",
+  "medium",
+  "high"
+] as const;

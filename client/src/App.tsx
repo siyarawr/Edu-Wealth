@@ -25,6 +25,9 @@ import SearchPage from "@/pages/search";
 import Landing from "@/pages/landing";
 import FinanceTracker from "@/pages/finance-tracker";
 import Admin from "@/pages/admin";
+import Premium from "@/pages/premium";
+import Pages from "@/pages/pages";
+import Assignments from "@/pages/assignments";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -43,6 +46,9 @@ function Router() {
       <Route path="/search" component={SearchPage} />
       <Route path="/finance-tracker" component={FinanceTracker} />
       <Route path="/admin" component={Admin} />
+      <Route path="/premium" component={Premium} />
+      <Route path="/pages" component={Pages} />
+      <Route path="/assignments" component={Assignments} />
       <Route component={NotFound} />
     </Switch>
   );

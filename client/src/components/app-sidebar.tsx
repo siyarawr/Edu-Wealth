@@ -15,6 +15,9 @@ import {
   LogOut,
   PiggyBank,
   Shield,
+  Crown,
+  FileEdit,
+  GraduationCap,
 } from "lucide-react";
 import ewIconPath from "@assets/image_1767372559290.png";
 import { Button } from "@/components/ui/button";
@@ -55,6 +58,8 @@ const academicsItems = [
   { title: "Seminars", url: "/seminars", icon: Calendar },
   { title: "My Notes", url: "/notes", icon: BookOpen },
   { title: "Meeting Notes", url: "/meeting-notes", icon: FileText },
+  { title: "Pages", url: "/pages", icon: FileEdit },
+  { title: "Assignments", url: "/assignments", icon: GraduationCap },
 ];
 
 const communicationItems = [
@@ -220,7 +225,13 @@ export function AppSidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate" data-testid="text-user-name">{displayName}</p>
-            <p className="text-xs text-muted-foreground truncate">Free Plan</p>
+            <Link href="/premium" className="text-xs text-muted-foreground hover:text-primary truncate flex items-center gap-1" data-testid="link-premium">
+              {user?.isPremium ? (
+                <><Crown className="h-3 w-3 text-amber-500" /> Premium</>
+              ) : (
+                <>Free Plan</>
+              )}
+            </Link>
           </div>
         </div>
       </SidebarFooter>

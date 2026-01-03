@@ -17,8 +17,12 @@ import {
   type FinanceEntry, type InsertFinanceEntry,
   type FinanceReminder, type InsertFinanceReminder,
   type UserEvent, type InsertUserEvent,
+  type Page, type InsertPage,
+  type AssignmentCourse, type InsertAssignmentCourse,
+  type Assignment, type InsertAssignment,
   users, expenses, budgets, internships, scholarships, seminars, seminarNotes, entrepreneurContent, calendarEvents,
   meetingNotes, meetingNoteShares, conversations, conversationParticipants, messages, messageReactions, financeEntries, financeReminders, userEvents,
+  pages, assignmentCourses, assignments,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, gte, lte, count } from "drizzle-orm";
@@ -93,6 +97,22 @@ export interface IStorage {
   logUserEvent(event: InsertUserEvent): Promise<UserEvent>;
   getUserEvents(limit?: number): Promise<UserEvent[]>;
   getUserStats(): Promise<{ totalUsers: number; todaySignups: number; todayLogins: number; weeklyActive: number }>;
+  getPages(userId: string): Promise<Page[]>;
+  getPage(id: number): Promise<Page | undefined>;
+  createPage(page: InsertPage): Promise<Page>;
+  updatePage(id: number, page: Partial<InsertPage>): Promise<Page | undefined>;
+  deletePage(id: number): Promise<void>;
+  getAssignmentCourses(userId: string): Promise<AssignmentCourse[]>;
+  getAssignmentCourse(id: number): Promise<AssignmentCourse | undefined>;
+  createAssignmentCourse(course: InsertAssignmentCourse): Promise<AssignmentCourse>;
+  updateAssignmentCourse(id: number, course: Partial<InsertAssignmentCourse>): Promise<AssignmentCourse | undefined>;
+  deleteAssignmentCourse(id: number): Promise<void>;
+  getAssignments(userId: string): Promise<Assignment[]>;
+  getAssignment(id: number): Promise<Assignment | undefined>;
+  createAssignment(assignment: InsertAssignment): Promise<Assignment>;
+  updateAssignment(id: number, assignment: Partial<InsertAssignment>): Promise<Assignment | undefined>;
+  deleteAssignment(id: number): Promise<void>;
+  updateUserStripeInfo(userId: string, info: { stripeCustomerId?: string; stripeSubscriptionId?: string; isPremium?: boolean }): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -468,6 +488,81 @@ export class DatabaseStorage implements IStorage {
     const weeklyActive = uniqueUsers.size;
 
     return { totalUsers, todaySignups, todayLogins, weeklyActive };
+  }
+
+  async getPages(userId: string): Promise<Page[]> {
+    return db.select().from(pages).where(eq(pages.userId, userId)).orderBy(desc(pages.updatedAt));
+  }
+
+  async getPage(id: number): Promise<Page | undefined> {
+    const [page] = await db.select().from(pages).where(eq(pages.id, id));
+    return page || undefined;
+  }
+
+  async createPage(page: InsertPage): Promise<Page> {
+    const [newPage] = await db.insert(pages).values(page).returning();
+    return newPage;
+  }
+
+  async updatePage(id: number, page: Partial<InsertPage>): Promise<Page | undefined> {
+    const [updated] = await db.update(pages).set({ ...page, updatedAt: new Date() }).where(eq(pages.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deletePage(id: number): Promise<void> {
+    await db.delete(pages).where(eq(pages.id, id));
+  }
+
+  async getAssignmentCourses(userId: string): Promise<AssignmentCourse[]> {
+    return db.select().from(assignmentCourses).where(eq(assignmentCourses.userId, userId)).orderBy(assignmentCourses.name);
+  }
+
+  async getAssignmentCourse(id: number): Promise<AssignmentCourse | undefined> {
+    const [course] = await db.select().from(assignmentCourses).where(eq(assignmentCourses.id, id));
+    return course || undefined;
+  }
+
+  async createAssignmentCourse(course: InsertAssignmentCourse): Promise<AssignmentCourse> {
+    const [newCourse] = await db.insert(assignmentCourses).values(course).returning();
+    return newCourse;
+  }
+
+  async updateAssignmentCourse(id: number, course: Partial<InsertAssignmentCourse>): Promise<AssignmentCourse | undefined> {
+    const [updated] = await db.update(assignmentCourses).set(course).where(eq(assignmentCourses.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteAssignmentCourse(id: number): Promise<void> {
+    await db.delete(assignments).where(eq(assignments.courseId, id));
+    await db.delete(assignmentCourses).where(eq(assignmentCourses.id, id));
+  }
+
+  async getAssignments(userId: string): Promise<Assignment[]> {
+    return db.select().from(assignments).where(eq(assignments.userId, userId)).orderBy(assignments.dueDate);
+  }
+
+  async getAssignment(id: number): Promise<Assignment | undefined> {
+    const [assignment] = await db.select().from(assignments).where(eq(assignments.id, id));
+    return assignment || undefined;
+  }
+
+  async createAssignment(assignment: InsertAssignment): Promise<Assignment> {
+    const [newAssignment] = await db.insert(assignments).values(assignment).returning();
+    return newAssignment;
+  }
+
+  async updateAssignment(id: number, assignment: Partial<InsertAssignment>): Promise<Assignment | undefined> {
+    const [updated] = await db.update(assignments).set(assignment).where(eq(assignments.id, id)).returning();
+    return updated || undefined;
+  }
+
+  async deleteAssignment(id: number): Promise<void> {
+    await db.delete(assignments).where(eq(assignments.id, id));
+  }
+
+  async updateUserStripeInfo(userId: string, info: { stripeCustomerId?: string; stripeSubscriptionId?: string; isPremium?: boolean }): Promise<User | undefined> {
+    const [updated] = await db.update(users).set(info).where(eq(users.id, userId)).returning();
+    return updated || undefined;
   }
 }
 

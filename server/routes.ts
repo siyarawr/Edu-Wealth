@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import OpenAI from "openai";
 import { setupAuth, registerAuthRoutes } from "./auth/localAuth";
+import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -1025,6 +1026,326 @@ Format your response as JSON with this structure:
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete finance entry" });
+    }
+  });
+
+  // ============ STRIPE PAYMENTS ============
+  app.get("/api/stripe/config", async (req, res) => {
+    try {
+      const publishableKey = await getStripePublishableKey();
+      res.json({ publishableKey });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get Stripe config" });
+    }
+  });
+
+  app.post("/api/stripe/create-checkout", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      
+      let customerId = user.stripeCustomerId;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email || undefined,
+          metadata: { userId },
+        });
+        await storage.updateUserStripeInfo(userId, { stripeCustomerId: customer.id });
+        customerId = customer.id;
+      }
+
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'Edu Wealth Premium',
+              description: 'Unlock AI-powered note generation and premium features',
+            },
+            unit_amount: 999,
+          },
+          quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: `${baseUrl}/premium?success=true`,
+        cancel_url: `${baseUrl}/premium?canceled=true`,
+        metadata: { userId },
+      });
+
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Checkout error:", error);
+      res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
+  app.post("/api/stripe/verify-payment", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const user = await storage.getUser(userId);
+      if (!user?.stripeCustomerId) {
+        return res.json({ isPremium: false });
+      }
+
+      const stripe = await getUncachableStripeClient();
+      const sessions = await stripe.checkout.sessions.list({
+        customer: user.stripeCustomerId,
+        limit: 10,
+      });
+
+      const completedPayment = sessions.data.find(
+        s => s.payment_status === 'paid' && s.metadata?.userId === userId
+      );
+
+      if (completedPayment && !user.isPremium) {
+        await storage.updateUserStripeInfo(userId, { isPremium: true });
+        return res.json({ isPremium: true });
+      }
+
+      res.json({ isPremium: user.isPremium || false });
+    } catch (error) {
+      console.error("Verify payment error:", error);
+      res.status(500).json({ error: "Failed to verify payment" });
+    }
+  });
+
+  // ============ PAGES ============
+  app.get("/api/pages", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const pages = await storage.getPages(userId);
+      res.json(pages);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch pages" });
+    }
+  });
+
+  app.get("/api/pages/:id", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const page = await storage.getPage(parseInt(req.params.id));
+      if (!page || page.userId !== userId) {
+        return res.status(404).json({ error: "Page not found" });
+      }
+      res.json(page);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch page" });
+    }
+  });
+
+  app.post("/api/pages", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const page = await storage.createPage({
+        userId,
+        title: req.body.title || "Untitled",
+        content: req.body.content || "",
+        emoji: req.body.emoji || "📄",
+      });
+      res.status(201).json(page);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create page" });
+    }
+  });
+
+  app.patch("/api/pages/:id", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const page = await storage.getPage(parseInt(req.params.id));
+      if (!page || page.userId !== userId) {
+        return res.status(404).json({ error: "Page not found" });
+      }
+      const updated = await storage.updatePage(parseInt(req.params.id), req.body);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update page" });
+    }
+  });
+
+  app.delete("/api/pages/:id", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const page = await storage.getPage(parseInt(req.params.id));
+      if (!page || page.userId !== userId) {
+        return res.status(404).json({ error: "Page not found" });
+      }
+      await storage.deletePage(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete page" });
+    }
+  });
+
+  // ============ ASSIGNMENT COURSES ============
+  app.get("/api/assignment-courses", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const courses = await storage.getAssignmentCourses(userId);
+      res.json(courses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch courses" });
+    }
+  });
+
+  app.post("/api/assignment-courses", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const course = await storage.createAssignmentCourse({
+        userId,
+        name: req.body.name,
+        emoji: req.body.emoji || "📚",
+        instructor: req.body.instructor,
+        targetGrade: req.body.targetGrade,
+        credits: req.body.credits,
+      });
+      res.status(201).json(course);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create course" });
+    }
+  });
+
+  app.patch("/api/assignment-courses/:id", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const course = await storage.getAssignmentCourse(parseInt(req.params.id));
+      if (!course || course.userId !== userId) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      const updated = await storage.updateAssignmentCourse(parseInt(req.params.id), req.body);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update course" });
+    }
+  });
+
+  app.delete("/api/assignment-courses/:id", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const course = await storage.getAssignmentCourse(parseInt(req.params.id));
+      if (!course || course.userId !== userId) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      await storage.deleteAssignmentCourse(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete course" });
+    }
+  });
+
+  // ============ ASSIGNMENTS ============
+  app.get("/api/assignments", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const assignments = await storage.getAssignments(userId);
+      res.json(assignments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch assignments" });
+    }
+  });
+
+  app.post("/api/assignments", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const assignment = await storage.createAssignment({
+        userId,
+        courseId: req.body.courseId,
+        title: req.body.title,
+        status: req.body.status || "pending",
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+        submittedAt: req.body.submittedAt ? new Date(req.body.submittedAt) : undefined,
+        priority: req.body.priority || "medium",
+        weight: req.body.weight,
+        gradePercent: req.body.gradePercent,
+        notes: req.body.notes,
+      });
+      res.status(201).json(assignment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create assignment" });
+    }
+  });
+
+  app.patch("/api/assignments/:id", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const assignment = await storage.getAssignment(parseInt(req.params.id));
+      if (!assignment || assignment.userId !== userId) {
+        return res.status(404).json({ error: "Assignment not found" });
+      }
+      const updateData: any = { ...req.body };
+      if (req.body.dueDate) updateData.dueDate = new Date(req.body.dueDate);
+      if (req.body.submittedAt) updateData.submittedAt = new Date(req.body.submittedAt);
+      const updated = await storage.updateAssignment(parseInt(req.params.id), updateData);
+      res.json(updated);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update assignment" });
+    }
+  });
+
+  app.delete("/api/assignments/:id", async (req, res) => {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const assignment = await storage.getAssignment(parseInt(req.params.id));
+      if (!assignment || assignment.userId !== userId) {
+        return res.status(404).json({ error: "Assignment not found" });
+      }
+      await storage.deleteAssignment(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete assignment" });
     }
   });
 
