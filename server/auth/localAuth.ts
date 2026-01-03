@@ -26,8 +26,10 @@ export function getSession(): RequestHandler {
     createTableIfMissing: true,
     ttl: sessionTtl,
     tableName: "sessions",
+    errorLog: (err: Error) => console.error("[SESSION STORE ERROR]", err),
   });
   const isProduction = process.env.NODE_ENV === "production";
+  console.log("[SESSION] Config - isProduction:", isProduction, "NODE_ENV:", process.env.NODE_ENV);
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
@@ -36,7 +38,7 @@ export function getSession(): RequestHandler {
     cookie: {
       httpOnly: true,
       secure: isProduction,
-      sameSite: "lax",
+      sameSite: isProduction ? "none" : "lax",
       maxAge: sessionTtl,
     },
   });
@@ -142,25 +144,31 @@ export function registerAuthRoutes(app: Express) {
       
       req.login({ id: user.id, email: user.email || "" }, async (err) => {
         if (err) {
+          console.error("[SIGNUP] Login after signup failed:", err);
           return res.status(500).json({ error: "Failed to log in after signup" });
         }
         
-        // Log signup event
-        try {
-          await storage.logUserEvent({
+        // Explicitly save session before responding
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("[SIGNUP] Session save failed:", saveErr);
+            return res.status(500).json({ error: "Failed to save session" });
+          }
+          console.log("[SIGNUP] Session saved successfully, sessionID:", req.sessionID);
+          
+          // Log signup event (don't block response)
+          storage.logUserEvent({
             userId: user.id,
             eventType: "signup",
             userEmail: user.email || undefined,
             userName: fullName || undefined,
+          }).catch(e => console.error("Failed to log signup event:", e));
+          
+          res.json({ 
+            id: user.id, 
+            email: user.email,
+            fullName: user.fullName,
           });
-        } catch (e) {
-          console.error("Failed to log signup event:", e);
-        }
-        
-        res.json({ 
-          id: user.id, 
-          email: user.email,
-          fullName: user.fullName,
         });
       });
     } catch (error) {
@@ -187,20 +195,24 @@ export function registerAuthRoutes(app: Express) {
           console.error("[LOGIN] Session error:", err);
           return res.status(500).json({ error: "Failed to establish session" });
         }
-        console.log("[LOGIN] Session established successfully");
         
-        // Log login event
-        try {
-          await storage.logUserEvent({
+        // Explicitly save session before responding
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("[LOGIN] Session save failed:", saveErr);
+            return res.status(500).json({ error: "Failed to save session" });
+          }
+          console.log("[LOGIN] Session saved successfully, sessionID:", req.sessionID);
+          
+          // Log login event (don't block response)
+          storage.logUserEvent({
             userId: user.id,
             eventType: "login",
             userEmail: user.email || undefined,
-          });
-        } catch (e) {
-          console.error("Failed to log login event:", e);
-        }
-        
-        res.json({ id: user.id, email: user.email });
+          }).catch(e => console.error("Failed to log login event:", e));
+          
+          res.json({ id: user.id, email: user.email });
+        });
       });
     })(req, res, next);
   });
@@ -215,6 +227,7 @@ export function registerAuthRoutes(app: Express) {
   });
 
   app.get("/api/auth/user", async (req, res) => {
+    console.log("[AUTH CHECK] sessionID:", req.sessionID, "isAuthenticated:", req.isAuthenticated(), "user:", req.user);
     if (!req.isAuthenticated() || !req.user) {
       return res.status(401).json({ error: "Not authenticated" });
     }
