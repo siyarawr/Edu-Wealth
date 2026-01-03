@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GraduationCap, Wallet, Calendar, MessageCircle, ArrowRight, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 import ewIconPath from "@assets/image_1767372559290.png";
 
 type AuthMode = "login" | "signup";
@@ -45,7 +46,10 @@ export default function Landing() {
         return;
       }
 
-      window.location.href = "/dashboard";
+      // Invalidate the auth query to trigger a refetch and redirect
+      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      // Force refetch to update isAuthenticated state
+      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
     } catch (error) {
       toast({
         title: "Error",
