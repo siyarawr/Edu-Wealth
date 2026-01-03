@@ -3,6 +3,25 @@ import { pgTable, text, varchar, integer, real, timestamp, boolean, serial } fro
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// User Activity Events (for admin tracking)
+export const userEvents = pgTable("user_events", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id"),
+  eventType: text("event_type").notNull(),
+  userEmail: text("user_email"),
+  userName: text("user_name"),
+  metadata: text("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertUserEventSchema = createInsertSchema(userEvents).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertUserEvent = z.infer<typeof insertUserEventSchema>;
+export type UserEvent = typeof userEvents.$inferSelect;
+
 // Users with full profile (includes Replit Auth fields)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

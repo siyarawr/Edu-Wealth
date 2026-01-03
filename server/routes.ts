@@ -645,6 +645,60 @@ Format your response as JSON with this structure:
     }
   });
 
+  // ============ ADMIN ANALYTICS (Private) ============
+  const ADMIN_EMAIL = "writerbook12345@gmail.com";
+  
+  app.get("/api/admin/stats", async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const user = await storage.getUser(userId);
+      if (user?.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const stats = await storage.getUserStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch admin stats" });
+    }
+  });
+
+  app.get("/api/admin/events", async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      const user = await storage.getUser(userId);
+      if (user?.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const limit = parseInt(req.query.limit as string) || 50;
+      const events = await storage.getUserEvents(limit);
+      res.json(events);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
+
+  app.get("/api/admin/check", async (req, res) => {
+    try {
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.json({ isAdmin: false });
+      }
+      const user = await storage.getUser(userId);
+      const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+      res.json({ isAdmin });
+    } catch (error) {
+      res.json({ isAdmin: false });
+    }
+  });
+
   // ============ MEETING NOTES ============
   app.get("/api/meeting-notes", async (req, res) => {
     try {

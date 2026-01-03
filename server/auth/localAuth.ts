@@ -124,10 +124,23 @@ export function registerAuthRoutes(app: Express) {
         await storage.updateUserProfile(user.id, { fullName });
       }
       
-      req.login({ id: user.id, email: user.email || "" }, (err) => {
+      req.login({ id: user.id, email: user.email || "" }, async (err) => {
         if (err) {
           return res.status(500).json({ error: "Failed to log in after signup" });
         }
+        
+        // Log signup event
+        try {
+          await storage.logUserEvent({
+            userId: user.id,
+            eventType: "signup",
+            userEmail: user.email || undefined,
+            userName: fullName || undefined,
+          });
+        } catch (e) {
+          console.error("Failed to log signup event:", e);
+        }
+        
         res.json({ 
           id: user.id, 
           email: user.email,
@@ -148,10 +161,22 @@ export function registerAuthRoutes(app: Express) {
       if (!user) {
         return res.status(401).json({ error: info?.message || "Invalid credentials" });
       }
-      req.login(user, (err) => {
+      req.login(user, async (err) => {
         if (err) {
           return res.status(500).json({ error: "Failed to establish session" });
         }
+        
+        // Log login event
+        try {
+          await storage.logUserEvent({
+            userId: user.id,
+            eventType: "login",
+            userEmail: user.email || undefined,
+          });
+        } catch (e) {
+          console.error("Failed to log login event:", e);
+        }
+        
         res.json({ id: user.id, email: user.email });
       });
     })(req, res, next);

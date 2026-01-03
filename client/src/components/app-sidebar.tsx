@@ -14,6 +14,7 @@ import {
   FileText,
   LogOut,
   PiggyBank,
+  Shield,
 } from "lucide-react";
 import ewIconPath from "@assets/image_1767372559290.png";
 import { Button } from "@/components/ui/button";
@@ -114,6 +115,10 @@ export function AppSidebar() {
     queryKey: ["/api/user/profile"],
   });
 
+  const { data: adminCheck } = useQuery<{ isAdmin: boolean }>({
+    queryKey: ["/api/admin/check"],
+  });
+
   const handleSignOut = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
@@ -187,6 +192,18 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="p-3 border-t border-sidebar-border">
+        {adminCheck?.isAdmin && (
+          <SidebarMenuButton
+            asChild
+            isActive={location === "/admin"}
+            className="mb-2"
+          >
+            <Link href="/admin" data-testid="link-admin">
+              <Shield className="h-4 w-4" />
+              <span>Activity</span>
+            </Link>
+          </SidebarMenuButton>
+        )}
         <Button
           variant="ghost"
           size="sm"

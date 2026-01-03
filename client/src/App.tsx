@@ -15,7 +15,6 @@ import { Loader2 } from "lucide-react";
 import Dashboard from "@/pages/dashboard";
 import Expenses from "@/pages/expenses";
 import FinanceReminders from "@/pages/finance-reminders";
-import Entrepreneurship from "@/pages/entrepreneurship";
 import Seminars from "@/pages/seminars";
 import Notes from "@/pages/notes";
 import MeetingNotes from "@/pages/meeting-notes";
@@ -25,6 +24,7 @@ import Calendar from "@/pages/calendar";
 import SearchPage from "@/pages/search";
 import Landing from "@/pages/landing";
 import FinanceTracker from "@/pages/finance-tracker";
+import Admin from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -34,7 +34,6 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/expenses" component={Expenses} />
       <Route path="/finance-reminders" component={FinanceReminders} />
-      <Route path="/entrepreneurship" component={Entrepreneurship} />
       <Route path="/seminars" component={Seminars} />
       <Route path="/notes" component={Notes} />
       <Route path="/meeting-notes" component={MeetingNotes} />
@@ -43,6 +42,7 @@ function Router() {
       <Route path="/calendar" component={Calendar} />
       <Route path="/search" component={SearchPage} />
       <Route path="/finance-tracker" component={FinanceTracker} />
+      <Route path="/admin" component={Admin} />
       <Route component={NotFound} />
     </Switch>
   );

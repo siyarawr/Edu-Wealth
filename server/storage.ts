@@ -16,11 +16,12 @@ import {
   type MessageReaction, type InsertMessageReaction,
   type FinanceEntry, type InsertFinanceEntry,
   type FinanceReminder, type InsertFinanceReminder,
+  type UserEvent, type InsertUserEvent,
   users, expenses, budgets, internships, scholarships, seminars, seminarNotes, entrepreneurContent, calendarEvents,
-  meetingNotes, meetingNoteShares, conversations, conversationParticipants, messages, messageReactions, financeEntries, financeReminders,
+  meetingNotes, meetingNoteShares, conversations, conversationParticipants, messages, messageReactions, financeEntries, financeReminders, userEvents,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, gte, lte } from "drizzle-orm";
+import { eq, desc, and, or, gte, lte, count } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -89,6 +90,9 @@ export interface IStorage {
   createFinanceReminder(reminder: InsertFinanceReminder): Promise<FinanceReminder>;
   updateFinanceReminder(id: number, reminder: Partial<InsertFinanceReminder>): Promise<FinanceReminder | undefined>;
   deleteFinanceReminder(id: number): Promise<void>;
+  logUserEvent(event: InsertUserEvent): Promise<UserEvent>;
+  getUserEvents(limit?: number): Promise<UserEvent[]>;
+  getUserStats(): Promise<{ totalUsers: number; todaySignups: number; todayLogins: number; weeklyActive: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -436,6 +440,34 @@ export class DatabaseStorage implements IStorage {
 
   async deleteFinanceReminder(id: number): Promise<void> {
     await db.delete(financeReminders).where(eq(financeReminders.id, id));
+  }
+
+  async logUserEvent(event: InsertUserEvent): Promise<UserEvent> {
+    const [newEvent] = await db.insert(userEvents).values(event).returning();
+    return newEvent;
+  }
+
+  async getUserEvents(limit: number = 50): Promise<UserEvent[]> {
+    return db.select().from(userEvents).orderBy(desc(userEvents.createdAt)).limit(limit);
+  }
+
+  async getUserStats(): Promise<{ totalUsers: number; todaySignups: number; todayLogins: number; weeklyActive: number }> {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const allUsers = await db.select().from(users);
+    const totalUsers = allUsers.length;
+
+    const todayEvents = await db.select().from(userEvents).where(gte(userEvents.createdAt, todayStart));
+    const todaySignups = todayEvents.filter(e => e.eventType === 'signup').length;
+    const todayLogins = todayEvents.filter(e => e.eventType === 'login').length;
+
+    const weekEvents = await db.select().from(userEvents).where(gte(userEvents.createdAt, weekAgo));
+    const uniqueUsers = new Set(weekEvents.map(e => e.userId).filter(Boolean));
+    const weeklyActive = uniqueUsers.size;
+
+    return { totalUsers, todaySignups, todayLogins, weeklyActive };
   }
 }
 
