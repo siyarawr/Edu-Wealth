@@ -528,10 +528,16 @@ Format your response as JSON with this structure:
           scholarships: [],
           internships: [],
           entrepreneurContent: [],
+          expenses: [],
+          financeReminders: [],
+          pages: [],
+          assignments: [],
+          conversations: [],
         });
       }
 
       const searchLower = query.toLowerCase();
+      const userId = (req.user as any)?.id;
 
       const seminars = await storage.getSeminars();
       const matchedSeminars = (seminars || []).filter(s => 
@@ -539,8 +545,6 @@ Format your response as JSON with this structure:
         s.description?.toLowerCase().includes(searchLower) ||
         s.speaker?.toLowerCase().includes(searchLower)
       ).slice(0, 10);
-
-      const userId = (req.user as any)?.id;
       
       const meetingNotes = userId ? await storage.getMeetingNotes(userId) : [];
       const matchedMeetingNotes = meetingNotes.filter(n =>
@@ -574,6 +578,47 @@ Format your response as JSON with this structure:
         c.category?.toLowerCase().includes(searchLower)
       ).slice(0, 10);
 
+      // New categories: expenses, finance reminders, pages, assignments, conversations
+      const expenses = userId ? await storage.getExpenses(userId) : [];
+      const matchedExpenses = expenses.filter(e =>
+        e.description?.toLowerCase().includes(searchLower) ||
+        e.category.toLowerCase().includes(searchLower)
+      ).slice(0, 10);
+
+      const financeReminders = userId ? await storage.getFinanceReminders(userId) : [];
+      const matchedFinanceReminders = financeReminders.filter(r =>
+        r.title.toLowerCase().includes(searchLower) ||
+        r.notes?.toLowerCase().includes(searchLower) ||
+        r.category.toLowerCase().includes(searchLower)
+      ).slice(0, 10);
+
+      const pages = userId ? await storage.getPages(userId) : [];
+      const matchedPages = pages.filter(p =>
+        p.title.toLowerCase().includes(searchLower) ||
+        p.content?.toLowerCase().includes(searchLower)
+      ).slice(0, 10);
+
+      const assignments = userId ? await storage.getAssignments(userId) : [];
+      const courses = userId ? await storage.getAssignmentCourses(userId) : [];
+      const courseMap = new Map(courses.map(c => [c.id, c]));
+      const matchedAssignments = assignments.filter(a => {
+        const course = a.courseId ? courseMap.get(a.courseId) : null;
+        return a.title.toLowerCase().includes(searchLower) ||
+          a.notes?.toLowerCase().includes(searchLower) ||
+          course?.name.toLowerCase().includes(searchLower);
+      }).slice(0, 10);
+
+      const conversations = userId ? await storage.getConversations(userId) : [];
+      const conversationsWithMessages = await Promise.all(
+        conversations.map(async (conv) => {
+          const msgs = await storage.getMessages(conv.id);
+          return { ...conv, messages: msgs };
+        })
+      );
+      const matchedConversations = conversationsWithMessages.filter(c =>
+        c.messages.some(m => m.content.toLowerCase().includes(searchLower))
+      ).slice(0, 10);
+
       res.json({
         seminars: matchedSeminars,
         seminarNotes: matchedSeminarNotes,
@@ -581,6 +626,11 @@ Format your response as JSON with this structure:
         scholarships: matchedScholarships,
         internships: matchedInternships,
         entrepreneurContent: matchedEntrepreneurContent,
+        expenses: matchedExpenses,
+        financeReminders: matchedFinanceReminders,
+        pages: matchedPages,
+        assignments: matchedAssignments,
+        conversations: matchedConversations,
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to search" });
