@@ -156,6 +156,7 @@ export function registerAuthRoutes(app: Express) {
   app.post("/api/auth/login", (req, res, next) => {
     passport.authenticate("local", (err: any, user: Express.User | false, info: { message: string }) => {
       if (err) {
+        console.error("Login error:", err);
         return res.status(500).json({ error: "Authentication failed" });
       }
       if (!user) {
