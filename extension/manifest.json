@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Edu Wealth",
+  "version": "1.0.0",
+  "description": "A comprehensive student platform combining financial management and seminar planning. Track expenses, find internships & scholarships, and generate AI-powered notes.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Edu Wealth - Student Finance & Planning"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": []
+}

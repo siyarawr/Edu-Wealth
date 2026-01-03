@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edu Wealth</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 320px;
+      min-height: 400px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #f1f5f9;
+      padding: 20px;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    
+    .logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+    }
+    
+    .title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+    
+    .subtitle {
+      font-size: 12px;
+      color: #94a3b8;
+    }
+    
+    .quick-links {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .quick-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      color: inherit;
+    }
+    
+    .quick-link:hover {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: rgba(20, 184, 166, 0.3);
+      transform: translateY(-1px);
+    }
+    
+    .quick-link-icon {
+      width: 32px;
+      height: 32px;
+      background: rgba(20, 184, 166, 0.15);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    
+    .quick-link-text {
+      flex: 1;
+    }
+    
+    .quick-link-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #f1f5f9;
+    }
+    
+    .quick-link-desc {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    
+    .arrow {
+      color: #64748b;
+      font-size: 14px;
+    }
+    
+    .open-app-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 16px;
+    }
+    
+    .open-app-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+    }
+    
+    .footer {
+      text-align: center;
+      padding-top: 16px;
+      border-top: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    
+    .footer-text {
+      font-size: 11px;
+      color: #64748b;
+    }
+    
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: #22c55e;
+      border-radius: 50%;
+    }
+    
+    .status-text {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">EW</div>
+    <div>
+      <div class="title">Edu Wealth</div>
+      <div class="subtitle">Student Finance & Planning</div>
+    </div>
+  </div>
+  
+  <button class="open-app-btn" id="openApp">Open Full Application</button>
+  
+  <div class="quick-links">
+    <a href="#" class="quick-link" data-page="/dashboard">
+      <div class="quick-link-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </div>
+      <div class="quick-link-text">
+        <div class="quick-link-title">Dashboard</div>
+        <div class="quick-link-desc">Overview & quick stats</div>
+      </div>
+      <span class="arrow">&#8250;</span>
+    </a>
+    
+    <a href="#" class="quick-link" data-page="/expenses">
+      <div class="quick-link-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M8 10h8M8 14h8"/></svg>
+      </div>
+      <div class="quick-link-text">
+        <div class="quick-link-title">Expense Tracker</div>
+        <div class="quick-link-desc">Track your spending</div>
+      </div>
+      <span class="arrow">&#8250;</span>
+    </a>
+    
+    <a href="#" class="quick-link" data-page="/notes">
+      <div class="quick-link-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><path d="M12 3L2 9l10 6 10-6-10-6z"/><path d="M2 17l10 6 10-6"/><path d="M2 13l10 6 10-6"/></svg>
+      </div>
+      <div class="quick-link-text">
+        <div class="quick-link-title">AI Notes</div>
+        <div class="quick-link-desc">Generate smart notes</div>
+      </div>
+      <span class="arrow">&#8250;</span>
+    </a>
+    
+    <a href="#" class="quick-link" data-page="/calendar">
+      <div class="quick-link-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg>
+      </div>
+      <div class="quick-link-text">
+        <div class="quick-link-title">Calendar</div>
+        <div class="quick-link-desc">Schedule & events</div>
+      </div>
+      <span class="arrow">&#8250;</span>
+    </a>
+  </div>
+  
+  <div class="footer">
+    <div class="footer-text">Edu Wealth v1.0.0</div>
+    <div class="status">
+      <div class="status-dot"></div>
+      <div class="status-text">Connected</div>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
