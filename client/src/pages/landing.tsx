@@ -43,20 +43,25 @@ export default function Landing() {
           description: data.error || "Something went wrong",
           variant: "destructive",
         });
+        setIsLoading(false);
         return;
       }
 
-      // Invalidate the auth query to trigger a refetch and redirect
+      // Clear cache and refetch user data
+      queryClient.clear();
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      // Force refetch to update isAuthenticated state
-      await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+      
+      // Small delay to ensure cookie is properly set, then refetch
+      setTimeout(async () => {
+        await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
+        setIsLoading(false);
+      }, 100);
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to connect to server",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };

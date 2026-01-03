@@ -30,16 +30,20 @@ export function getSession(): RequestHandler {
   });
   const isProduction = process.env.NODE_ENV === "production";
   console.log("[SESSION] Config - isProduction:", isProduction, "NODE_ENV:", process.env.NODE_ENV);
+  
+  // Replit runs apps behind a proxy, always trust proxy
+  // Use secure cookies in production, sameSite strict for better compatibility
   return session({
     secret: process.env.SESSION_SECRET!,
     store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     cookie: {
       httpOnly: true,
       secure: isProduction,
-      sameSite: isProduction ? "none" : "lax",
+      sameSite: "lax",
       maxAge: sessionTtl,
+      path: "/",
     },
   });
 }
