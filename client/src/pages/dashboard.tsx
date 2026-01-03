@@ -28,7 +28,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { Internship, Seminar, Expense, Budget } from "@shared/schema";
+import type { Internship, Seminar, Expense, Budget, User as UserType } from "@shared/schema";
 
 interface DashboardStats {
   totalSpent: number;
@@ -49,6 +49,10 @@ export default function Dashboard() {
     queryKey: ["/api/dashboard/stats"],
   });
 
+  const { data: userProfile } = useQuery<UserType>({
+    queryKey: ["/api/user/profile"],
+  });
+
   const { data: internships = [], isLoading: internshipsLoading } = useQuery<Internship[]>({
     queryKey: ["/api/internships"],
   });
@@ -60,6 +64,8 @@ export default function Dashboard() {
   const { data: budgets = [] } = useQuery<Budget[]>({
     queryKey: ["/api/budgets"],
   });
+
+  const userName = userProfile?.fullName?.split(" ")[0] || "there";
 
   // Build monthly spending data from real expenses
   const monthlyData = (() => {
@@ -135,8 +141,8 @@ export default function Dashboard() {
   return (
     <div className="p-8 space-y-8 max-w-5xl mx-auto">
       <div>
-        <h1 className="text-4xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Welcome back. Here's your financial overview.</p>
+        <h1 className="text-4xl font-bold">Welcome back, {userName}</h1>
+        <p className="text-muted-foreground mt-1">Here's your financial overview.</p>
       </div>
 
       {!hasProfile && (
