@@ -3,12 +3,6 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import OpenAI from "openai";
 import { setupAuth, registerAuthRoutes } from "./auth/localAuth";
-import multer from "multer";
-
-const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 25 * 1024 * 1024 }
-});
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -334,98 +328,6 @@ Format your response as JSON with this structure:
     } catch (error) {
       console.error("Error generating notes:", error);
       res.status(500).json({ error: "Failed to generate notes" });
-    }
-  });
-
-  // ============ FILE UPLOAD FOR NOTES ============
-  app.post("/api/notes/upload", upload.single("file"), async (req, res) => {
-    try {
-      const userId = (req.user as any)?.id;
-      if (!userId) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-      const file = req.file;
-      const { title, category } = req.body;
-
-      if (!file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-
-      let extractedText = "";
-
-      if (file.mimetype === "application/pdf") {
-        try {
-          const pdfParseModule = await import("pdf-parse");
-          const pdfParse = (pdfParseModule as any).default || pdfParseModule;
-          const pdfData = await pdfParse(file.buffer);
-          extractedText = pdfData.text;
-        } catch (pdfError) {
-          console.error("PDF parsing error:", pdfError);
-          return res.status(400).json({ error: "Could not parse PDF file" });
-        }
-      } else if (file.mimetype.startsWith("audio/")) {
-        return res.status(400).json({ 
-          error: "Audio transcription is not yet available. Please upload a PDF or paste the transcript text manually." 
-        });
-      } else {
-        return res.status(400).json({ error: "Unsupported file type. Please upload a PDF file." });
-      }
-
-      if (!extractedText.trim()) {
-        return res.status(400).json({ error: "Could not extract text from the PDF file" });
-      }
-
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert note-taker. Given document content, extract:
-1. A concise summary (2-3 sentences)
-2. Key points (bullet points of main takeaways)
-3. Action items (tasks the reader should complete)
-
-Format your response as JSON with this structure:
-{
-  "summary": "...",
-  "keyPoints": ["point1", "point2", ...],
-  "actionItems": ["action1", "action2", ...]
-}`
-          },
-          {
-            role: "user",
-            content: extractedText.slice(0, 10000)
-          }
-        ],
-        response_format: { type: "json_object" },
-        max_completion_tokens: 1024,
-      });
-
-      const content = completion.choices[0]?.message?.content;
-      if (!content) {
-        return res.status(500).json({ error: "Failed to generate notes from file" });
-      }
-
-      const parsed = JSON.parse(content);
-      
-      const note = await storage.createSeminarNote({
-        seminarId: null,
-        userId,
-        title: title || file.originalname || "Untitled Note",
-        category: category || "General",
-        content: parsed.summary,
-        keyPoints: JSON.stringify(parsed.keyPoints),
-        actionItems: JSON.stringify(parsed.actionItems),
-      });
-
-      res.status(201).json({
-        ...note,
-        keyPoints: parsed.keyPoints,
-        actionItems: parsed.actionItems,
-      });
-    } catch (error) {
-      console.error("File upload error:", error);
-      res.status(500).json({ error: "Failed to process uploaded file" });
     }
   });
 

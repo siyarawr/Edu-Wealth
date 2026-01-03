@@ -47,10 +47,7 @@ import {
   Loader2,
   Download,
   Trash2,
-  Tag,
-  Upload,
-  File,
-  X
+  Tag
 } from "lucide-react";
 import type { SeminarNote, Seminar } from "@shared/schema";
 import jsPDF from "jspdf";
@@ -68,8 +65,6 @@ export default function Notes() {
   const [noteTitle, setNoteTitle] = useState("");
   const [noteCategory, setNoteCategory] = useState("General");
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -116,79 +111,6 @@ export default function Notes() {
       });
     },
   });
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const validTypes = ["application/pdf"];
-
-    if (!validTypes.includes(file.type)) {
-      toast({
-        title: "Invalid file type",
-        description: "Only PDF files are currently supported. Audio support coming soon!",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (file.size > 25 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Maximum file size is 25MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setUploadedFile(file);
-    toast({
-      title: "File uploaded",
-      description: `${file.name} ready for processing`,
-    });
-  };
-
-  const processUploadedFile = async () => {
-    if (!uploadedFile) return;
-
-    setIsProcessingFile(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", uploadedFile);
-      formData.append("title", noteTitle || "Untitled Note");
-      formData.append("category", noteCategory);
-
-      const response = await fetch("/api/notes/upload", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.error || "Upload failed");
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["/api/notes"] });
-      setUploadedFile(null);
-      setNoteTitle("");
-      setNoteCategory("General");
-      toast({
-        title: "Notes generated!",
-        description: "AI has analyzed your PDF and created notes.",
-      });
-    } catch (error: any) {
-      console.error("File processing error:", error);
-      toast({
-        title: "Processing failed",
-        description: error.message || "Could not process the file. Try pasting text instead.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessingFile(false);
-    }
-  };
 
   const parseNote = (note: SeminarNote): NoteWithParsed => {
     let parsedKeyPoints: string[] = [];
@@ -626,7 +548,7 @@ export default function Notes() {
               <h2 className="font-semibold">AI Note Taker</h2>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Upload a PDF or paste text. AI will extract key points and action items.
+              Paste text and AI will extract key points and action items.
             </p>
             <div className="space-y-3 mb-3">
               <div>
@@ -652,80 +574,11 @@ export default function Notes() {
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div>
-                <Label className="text-xs mb-1 block">Upload PDF File</Label>
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf"
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    data-testid="input-file-upload"
-                  />
-                  <div className="flex items-center justify-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 hover:bg-muted/50 transition-colors">
-                    {uploadedFile ? (
-                      <div className="flex items-center gap-2 w-full">
-                        <File className="h-5 w-5 text-chart-1" />
-                        <span className="text-sm truncate flex-1">{uploadedFile.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 z-20"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setUploadedFile(null);
-                          }}
-                          data-testid="button-remove-file"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <Upload className="h-5 w-5 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Drop or click to upload</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">PDF files up to 25MB</p>
-              </div>
-
-              {uploadedFile && (
-                <Button
-                  className="w-full"
-                  onClick={processUploadedFile}
-                  disabled={isProcessingFile}
-                  data-testid="button-process-file"
-                >
-                  {isProcessingFile ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Analyze File
-                    </>
-                  )}
-                </Button>
-              )}
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Or paste text</span>
-                </div>
-              </div>
 
               <div>
                 <Label className="text-xs">Transcript</Label>
                 <Textarea
-                  placeholder="Paste transcript here..."
+                  placeholder="Paste transcript or notes here..."
                   className="mt-1 min-h-28 bg-muted/50 border-0"
                   value={aiInput}
                   onChange={(e) => setAiInput(e.target.value)}
@@ -740,7 +593,7 @@ export default function Notes() {
                 title: noteTitle || "Untitled Note", 
                 category: noteCategory 
               })}
-              disabled={generateNotesMutation.isPending || !aiInput.trim() || !!uploadedFile}
+              disabled={generateNotesMutation.isPending || !aiInput.trim()}
               data-testid="button-generate-notes"
             >
               {generateNotesMutation.isPending ? (
