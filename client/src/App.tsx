@@ -33,6 +33,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/expenses" component={Expenses} />
       <Route path="/internships" component={Internships} />
       <Route path="/scholarships" component={Scholarships} />
