@@ -121,8 +121,13 @@ export function AppSidebar() {
     queryKey: ["/api/user/profile"],
   });
 
-  const handleSignOut = () => {
-    window.location.href = "/api/logout";
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    } catch (e) {
+      // ignore errors
+    }
+    window.location.href = "/";
   };
 
   const displayName = user?.fullName || user?.username || "User";
