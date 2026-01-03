@@ -24,8 +24,8 @@ export default function Landing() {
 
     try {
       const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/signup";
-      const body = mode === "login" 
-        ? { email, password } 
+      const body = mode === "login"
+        ? { email, password }
         : { email, password, fullName };
 
       const response = await fetch(endpoint, {
@@ -47,15 +47,12 @@ export default function Landing() {
         return;
       }
 
-      // Clear cache and refetch user data
-      queryClient.clear();
+      // Successfully authenticated - update the auth cache directly with the user data
+      // Then fetch fresh data to trigger the redirect via useAuth hook
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      await queryClient.fetchQuery({ queryKey: ["/api/auth/user"] });
       
-      // Small delay to ensure cookie is properly set, then refetch
-      setTimeout(async () => {
-        await queryClient.refetchQueries({ queryKey: ["/api/auth/user"] });
-        setIsLoading(false);
-      }, 100);
+      // Loading state will be handled by the redirect
     } catch (error) {
       toast({
         title: "Error",
