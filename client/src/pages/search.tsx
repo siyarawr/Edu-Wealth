@@ -342,7 +342,9 @@ export default function SearchPage() {
                           <span>{page.emoji || "📄"}</span>
                           {page.title}
                         </h3>
-                        <p className="text-sm text-muted-foreground line-clamp-2">{page.content}</p>
+                        {page.content && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">{page.content}</p>
+                        )}
                       </CardContent>
                     </Card>
                   </Link>
@@ -383,20 +385,23 @@ export default function SearchPage() {
                 <Badge variant="secondary">{results.conversations.length}</Badge>
               </h2>
               <div className="space-y-2">
-                {results.conversations.map((conv) => (
-                  <Link key={conv.id} href="/chat">
-                    <Card className="hover-elevate cursor-pointer" data-testid={`search-result-conversation-${conv.id}`}>
-                      <CardContent className="p-4">
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {conv.messages?.[0]?.content || "No messages"}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {conv.messages?.length || 0} message(s)
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
+                {results.conversations.map((conv) => {
+                  const firstMessage = conv.messages?.find(m => m.content);
+                  return (
+                    <Link key={conv.id} href="/chat">
+                      <Card className="hover-elevate cursor-pointer" data-testid={`search-result-conversation-${conv.id}`}>
+                        <CardContent className="p-4">
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {firstMessage?.content || "No messages"}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {conv.messages?.length || 0} message(s)
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           )}

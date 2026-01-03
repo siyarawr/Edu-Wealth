@@ -213,11 +213,16 @@ export default function Pages() {
                     className={`w-full text-left p-3 rounded-lg hover-elevate ${selectedPage?.id === page.id ? "bg-primary/10 ring-1 ring-primary/30" : "bg-muted/50"}`}
                     data-testid={`button-page-${page.id}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{page.emoji || "📄"}</span>
+                    <div className="flex items-start gap-3">
+                      <span className="text-xl mt-0.5">{page.emoji || "📄"}</span>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{page.title}</p>
-                        <p className="text-xs text-muted-foreground">
+                        {page.content && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                            {page.content}
+                          </p>
+                        )}
+                        <p className="text-xs text-muted-foreground/70 mt-1">
                           {formatDate(page.updatedAt)}
                         </p>
                       </div>

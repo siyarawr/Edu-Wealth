@@ -541,61 +541,61 @@ Format your response as JSON with this structure:
 
       const seminars = await storage.getSeminars();
       const matchedSeminars = (seminars || []).filter(s => 
-        s.title.toLowerCase().includes(searchLower) ||
-        s.description?.toLowerCase().includes(searchLower) ||
-        s.speaker?.toLowerCase().includes(searchLower)
+        (s.title && s.title.toLowerCase().includes(searchLower)) ||
+        (s.description && s.description.toLowerCase().includes(searchLower)) ||
+        (s.speaker && s.speaker.toLowerCase().includes(searchLower))
       ).slice(0, 10);
       
       const meetingNotes = userId ? await storage.getMeetingNotes(userId) : [];
       const matchedMeetingNotes = meetingNotes.filter(n =>
-        n.title.toLowerCase().includes(searchLower) ||
-        n.summary?.toLowerCase().includes(searchLower) ||
-        n.notes?.toLowerCase().includes(searchLower)
+        (n.title && n.title.toLowerCase().includes(searchLower)) ||
+        (n.summary && n.summary.toLowerCase().includes(searchLower)) ||
+        (n.notes && n.notes.toLowerCase().includes(searchLower))
       ).slice(0, 10);
 
       const scholarships = await storage.getScholarships();
       const matchedScholarships = scholarships.filter(s =>
-        s.name.toLowerCase().includes(searchLower) ||
-        s.description?.toLowerCase().includes(searchLower)
+        (s.name && s.name.toLowerCase().includes(searchLower)) ||
+        (s.description && s.description.toLowerCase().includes(searchLower))
       ).slice(0, 10);
 
       const internships = await storage.getInternships();
       const matchedInternships = internships.filter(i =>
-        i.title.toLowerCase().includes(searchLower) ||
-        i.company.toLowerCase().includes(searchLower) ||
-        i.description?.toLowerCase().includes(searchLower)
+        (i.title && i.title.toLowerCase().includes(searchLower)) ||
+        (i.company && i.company.toLowerCase().includes(searchLower)) ||
+        (i.description && i.description.toLowerCase().includes(searchLower))
       ).slice(0, 10);
 
       const allNotes = userId ? await storage.getSeminarNotes(userId) : [];
       const matchedSeminarNotes = allNotes.filter(n =>
-        n.content?.toLowerCase().includes(searchLower)
+        n.content && n.content.toLowerCase().includes(searchLower)
       ).slice(0, 10);
 
       const entrepreneurContent = await storage.getEntrepreneurContent();
       const matchedEntrepreneurContent = entrepreneurContent.filter(c =>
-        c.title.toLowerCase().includes(searchLower) ||
-        c.content?.toLowerCase().includes(searchLower) ||
-        c.category?.toLowerCase().includes(searchLower)
+        (c.title && c.title.toLowerCase().includes(searchLower)) ||
+        (c.content && c.content.toLowerCase().includes(searchLower)) ||
+        (c.category && c.category.toLowerCase().includes(searchLower))
       ).slice(0, 10);
 
       // New categories: expenses, finance reminders, pages, assignments, conversations
       const expenses = userId ? await storage.getExpenses(userId) : [];
       const matchedExpenses = expenses.filter(e =>
-        e.description?.toLowerCase().includes(searchLower) ||
-        e.category.toLowerCase().includes(searchLower)
+        (e.description && e.description.toLowerCase().includes(searchLower)) ||
+        (e.category && e.category.toLowerCase().includes(searchLower))
       ).slice(0, 10);
 
       const financeReminders = userId ? await storage.getFinanceReminders(userId) : [];
       const matchedFinanceReminders = financeReminders.filter(r =>
-        r.title.toLowerCase().includes(searchLower) ||
-        r.notes?.toLowerCase().includes(searchLower) ||
-        r.category.toLowerCase().includes(searchLower)
+        (r.title && r.title.toLowerCase().includes(searchLower)) ||
+        (r.notes && r.notes.toLowerCase().includes(searchLower)) ||
+        (r.category && r.category.toLowerCase().includes(searchLower))
       ).slice(0, 10);
 
       const pages = userId ? await storage.getPages(userId) : [];
       const matchedPages = pages.filter(p =>
-        p.title.toLowerCase().includes(searchLower) ||
-        p.content?.toLowerCase().includes(searchLower)
+        (p.title && p.title.toLowerCase().includes(searchLower)) ||
+        (p.content && p.content.toLowerCase().includes(searchLower))
       ).slice(0, 10);
 
       const assignments = userId ? await storage.getAssignments(userId) : [];
@@ -603,20 +603,20 @@ Format your response as JSON with this structure:
       const courseMap = new Map(courses.map(c => [c.id, c]));
       const matchedAssignments = assignments.filter(a => {
         const course = a.courseId ? courseMap.get(a.courseId) : null;
-        return a.title.toLowerCase().includes(searchLower) ||
-          a.notes?.toLowerCase().includes(searchLower) ||
-          course?.name.toLowerCase().includes(searchLower);
+        return (a.title && a.title.toLowerCase().includes(searchLower)) ||
+          (a.notes && a.notes.toLowerCase().includes(searchLower)) ||
+          (course?.name && course.name.toLowerCase().includes(searchLower));
       }).slice(0, 10);
 
       const conversations = userId ? await storage.getConversations(userId) : [];
       const conversationsWithMessages = await Promise.all(
         conversations.map(async (conv) => {
           const msgs = await storage.getMessages(conv.id);
-          return { ...conv, messages: msgs };
+          return { ...conv, messages: msgs || [] };
         })
       );
       const matchedConversations = conversationsWithMessages.filter(c =>
-        c.messages.some(m => m.content.toLowerCase().includes(searchLower))
+        (c.messages || []).some(m => m.content && m.content.toLowerCase().includes(searchLower))
       ).slice(0, 10);
 
       res.json({
