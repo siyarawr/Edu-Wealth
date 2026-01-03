@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  TrendingUp,
-  TrendingDown,
   DollarSign,
   PiggyBank,
   CreditCard,
@@ -30,23 +28,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { Internship, Seminar } from "@shared/schema";
-
-const monthlyData = [
-  { month: "Aug", spending: 1200, budget: 1500 },
-  { month: "Sep", spending: 1350, budget: 1500 },
-  { month: "Oct", spending: 1100, budget: 1500 },
-  { month: "Nov", spending: 1450, budget: 1500 },
-  { month: "Dec", spending: 1280, budget: 1500 },
-  { month: "Jan", spending: 1150, budget: 1500 },
-];
-
-const budgetCategories = [
-  { name: "Housing", spent: 800, limit: 900 },
-  { name: "Food", spent: 320, limit: 400 },
-  { name: "Transportation", spent: 150, limit: 200 },
-  { name: "Entertainment", spent: 80, limit: 100 },
-];
+import type { Internship, Seminar, Expense, Budget } from "@shared/schema";
 
 interface DashboardStats {
   totalSpent: number;
@@ -70,6 +52,43 @@ export default function Dashboard() {
   const { data: internships = [], isLoading: internshipsLoading } = useQuery<Internship[]>({
     queryKey: ["/api/internships"],
   });
+
+  const { data: expenses = [] } = useQuery<Expense[]>({
+    queryKey: ["/api/expenses"],
+  });
+
+  const { data: budgets = [] } = useQuery<Budget[]>({
+    queryKey: ["/api/budgets"],
+  });
+
+  // Build monthly spending data from real expenses
+  const monthlyData = (() => {
+    const now = new Date();
+    const months: { month: string; spending: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthName = d.toLocaleDateString("en-US", { month: "short" });
+      const monthExpenses = expenses.filter((e) => {
+        const expDate = new Date(e.date);
+        return expDate.getMonth() === d.getMonth() && expDate.getFullYear() === d.getFullYear();
+      });
+      const spending = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
+      months.push({ month: monthName, spending });
+    }
+    return months;
+  })();
+
+  // Build budget categories from real budgets and expenses
+  const budgetCategories = budgets.map((budget) => {
+    const categoryExpenses = expenses.filter(
+      (e) => e.category.toLowerCase() === budget.category.toLowerCase() &&
+        new Date(e.date).toISOString().slice(0, 7) === budget.month
+    );
+    const spent = categoryExpenses.reduce((sum, e) => sum + e.amount, 0);
+    return { name: budget.category, spent, limit: budget.limit };
+  });
+
+  const hasSpendingData = monthlyData.some((m) => m.spending > 0);
 
   const totalSpent = stats?.totalSpent || 0;
   const budgetLimit = stats?.monthlyBudget || 0;
@@ -146,8 +165,7 @@ export default function Dashboard() {
             ${totalSpent.toLocaleString()}
           </div>
           <div className="flex items-center gap-1 mt-1">
-            <TrendingDown className="h-3 w-3 text-chart-2" />
-            <span className="text-xs text-chart-2">12% less</span>
+            <span className="text-xs text-muted-foreground">This month</span>
           </div>
         </div>
 
@@ -160,8 +178,9 @@ export default function Dashboard() {
             ${budgetRemaining.toLocaleString()}
           </div>
           <div className="flex items-center gap-1 mt-1">
-            <TrendingUp className="h-3 w-3 text-chart-2" />
-            <span className="text-xs text-muted-foreground">{Math.round((budgetRemaining / budgetLimit) * 100)}% remaining</span>
+            <span className="text-xs text-muted-foreground">
+              {budgetLimit > 0 ? `${Math.round((budgetRemaining / budgetLimit) * 100)}% remaining` : "Set up budget"}
+            </span>
           </div>
         </div>
 
@@ -197,34 +216,42 @@ export default function Dashboard() {
             <Badge variant="secondary" className="text-xs">6 months</Badge>
           </div>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyData}>
-                <defs>
-                  <linearGradient id="colorSpending" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="month" axisLine={false} tickLine={false} className="text-xs" />
-                <YAxis axisLine={false} tickLine={false} className="text-xs" width={40} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "none",
-                    borderRadius: "8px",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="spending"
-                  stroke="hsl(var(--chart-1))"
-                  fillOpacity={1}
-                  fill="url(#colorSpending)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            {hasSpendingData ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthlyData}>
+                  <defs>
+                    <linearGradient id="colorSpending" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} className="text-xs" />
+                  <YAxis axisLine={false} tickLine={false} className="text-xs" width={40} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--popover))",
+                      border: "none",
+                      borderRadius: "8px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="spending"
+                    stroke="hsl(var(--chart-1))"
+                    fillOpacity={1}
+                    fill="url(#colorSpending)"
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <DollarSign className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">No spending data yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Add expenses to see your spending trends</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -233,20 +260,28 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold">Budget Tracker</h2>
           </div>
           <div className="space-y-4">
-            {budgetCategories.map((category) => (
-              <div key={category.name} className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <span>{category.name}</span>
-                  <span className="font-mono text-muted-foreground text-xs">
-                    ${category.spent} / ${category.limit}
-                  </span>
+            {budgetCategories.length > 0 ? (
+              budgetCategories.map((category) => (
+                <div key={category.name} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>{category.name}</span>
+                    <span className="font-mono text-muted-foreground text-xs">
+                      ${category.spent} / ${category.limit}
+                    </span>
+                  </div>
+                  <Progress
+                    value={(category.spent / category.limit) * 100}
+                    className="h-1.5"
+                  />
                 </div>
-                <Progress
-                  value={(category.spent / category.limit) * 100}
-                  className="h-1.5"
-                />
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Target className="h-10 w-10 text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">No budgets set</p>
+                <p className="text-xs text-muted-foreground mt-1">Set up budgets to track your spending</p>
               </div>
-            ))}
+            )}
           </div>
           <Button variant="ghost" className="w-full mt-4 text-sm" asChild>
             <Link href="/expenses">
