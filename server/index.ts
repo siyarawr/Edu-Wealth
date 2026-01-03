@@ -43,7 +43,7 @@ async function initStripe() {
     await runMigrations({ 
       databaseUrl,
       schema: 'stripe'
-    });
+    } as any);
     console.log('Stripe schema ready');
 
     const stripeSync = await getStripeSync();
@@ -72,8 +72,6 @@ async function initStripe() {
     console.error('Failed to initialize Stripe:', error);
   }
 }
-
-await initStripe();
 
 app.post(
   '/api/stripe/webhook',
@@ -140,6 +138,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await initStripe();
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
