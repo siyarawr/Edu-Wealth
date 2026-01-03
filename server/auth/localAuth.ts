@@ -61,19 +61,26 @@ export async function setupAuth(app: Express) {
       { usernameField: "email", passwordField: "password" },
       async (email, password, done) => {
         try {
+          console.log("[PASSPORT] Looking up user:", email.toLowerCase());
           const user = await storage.getUserByEmail(email.toLowerCase());
           if (!user) {
+            console.log("[PASSPORT] User not found");
             return done(null, false, { message: "Invalid email or password" });
           }
+          console.log("[PASSPORT] User found:", user.id);
           if (!user.password) {
+            console.log("[PASSPORT] User has no password set");
             return done(null, false, { message: "Invalid email or password" });
           }
+          console.log("[PASSPORT] Verifying password");
           const isValid = await verifyPassword(password, user.password);
+          console.log("[PASSPORT] Password valid:", isValid);
           if (!isValid) {
             return done(null, false, { message: "Invalid email or password" });
           }
           return done(null, { id: user.id, email: user.email || "" });
         } catch (error) {
+          console.error("[PASSPORT] Error:", error);
           return done(error);
         }
       }
@@ -96,29 +103,38 @@ export async function setupAuth(app: Express) {
 export function registerAuthRoutes(app: Express) {
   app.post("/api/auth/signup", async (req, res) => {
     try {
+      console.log("[SIGNUP] Starting signup process");
       const { email, password, fullName } = req.body;
       
       if (!email || !password) {
+        console.log("[SIGNUP] Missing email or password");
         return res.status(400).json({ error: "Email and password are required" });
       }
       
       if (password.length < 6) {
+        console.log("[SIGNUP] Password too short");
         return res.status(400).json({ error: "Password must be at least 6 characters" });
       }
       
       const emailLower = email.toLowerCase();
+      console.log("[SIGNUP] Checking for existing user:", emailLower);
       const existing = await storage.getUserByEmail(emailLower);
       if (existing) {
+        console.log("[SIGNUP] User already exists");
         return res.status(400).json({ error: "An account with this email already exists" });
       }
       
+      console.log("[SIGNUP] Hashing password");
       const hashedPassword = await hashPassword(password);
+      console.log("[SIGNUP] Password hashed successfully");
       
+      console.log("[SIGNUP] Creating user in database");
       const user = await storage.createUser({
         email: emailLower,
         password: hashedPassword,
         username: emailLower,
       });
+      console.log("[SIGNUP] User created:", user.id);
       
       if (fullName) {
         await storage.updateUserProfile(user.id, { fullName });
@@ -154,18 +170,24 @@ export function registerAuthRoutes(app: Express) {
   });
 
   app.post("/api/auth/login", (req, res, next) => {
+    console.log("[LOGIN] Starting login process for:", req.body.email);
     passport.authenticate("local", (err: any, user: Express.User | false, info: { message: string }) => {
       if (err) {
-        console.error("Login error:", err);
+        console.error("[LOGIN] Authentication error:", err);
+        console.error("[LOGIN] Error stack:", err?.stack);
         return res.status(500).json({ error: "Authentication failed" });
       }
       if (!user) {
+        console.log("[LOGIN] User not found or invalid credentials:", info?.message);
         return res.status(401).json({ error: info?.message || "Invalid credentials" });
       }
+      console.log("[LOGIN] User authenticated, establishing session:", user.id);
       req.login(user, async (err) => {
         if (err) {
+          console.error("[LOGIN] Session error:", err);
           return res.status(500).json({ error: "Failed to establish session" });
         }
+        console.log("[LOGIN] Session established successfully");
         
         // Log login event
         try {
