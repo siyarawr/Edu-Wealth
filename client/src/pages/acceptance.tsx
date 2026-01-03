@@ -318,7 +318,7 @@ export default function AcceptanceCalculator() {
               />
             </div>
 
-            <Button onClick={handleCalculate} className="w-full" data-testid="button-calculate">
+            <Button variant="outline" onClick={handleCalculate} className="w-full" data-testid="button-calculate">
               <Target className="h-4 w-4 mr-2" />
               Calculate My Chances
             </Button>

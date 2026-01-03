@@ -218,7 +218,7 @@ export default function FinanceTracker() {
           }
         }}>
           <DialogTrigger asChild>
-            <Button onClick={() => setIsAddDialogOpen(true)} data-testid="button-add-entry">
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(true)} data-testid="button-add-entry">
               <Plus className="h-4 w-4 mr-2" />
               Add Entry
             </Button>

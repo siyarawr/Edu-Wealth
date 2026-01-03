@@ -184,7 +184,7 @@ export default function MeetingNotes() {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-new-meeting-note">
+            <Button variant="outline" data-testid="button-new-meeting-note">
               <Plus className="h-4 w-4 mr-2" />
               New Meeting Note
             </Button>
@@ -289,6 +289,7 @@ export default function MeetingNotes() {
                 />
               </div>
               <Button
+                variant="outline"
                 onClick={() => createMutation.mutate(newNote)}
                 disabled={!newNote.title || createMutation.isPending}
                 className="w-full"
@@ -306,7 +307,7 @@ export default function MeetingNotes() {
           <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium mb-2">No meeting notes yet</h3>
           <p className="text-muted-foreground mb-4">Start recording your 1-1 meetings and sessions</p>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Button variant="outline" onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Create First Note
           </Button>

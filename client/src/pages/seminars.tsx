@@ -297,7 +297,7 @@ export default function Seminars() {
                                       </div>
                                     )}
                                   </div>
-                                  <Button className="w-full" asChild>
+                                  <Button variant="outline" className="w-full" asChild>
                                     <a href={seminar.signupUrl || "#"} target="_blank" rel="noopener noreferrer">
                                       Sign Up Now
                                       <ExternalLink className="ml-2 h-4 w-4" />
@@ -307,7 +307,7 @@ export default function Seminars() {
                               </ScrollArea>
                             </DialogContent>
                           </Dialog>
-                          <Button size="sm" asChild>
+                          <Button variant="outline" size="sm" asChild>
                             <a href={seminar.signupUrl || "#"} target="_blank" rel="noopener noreferrer" data-testid={`button-signup-${seminar.id}`}>
                               Sign Up
                             </a>

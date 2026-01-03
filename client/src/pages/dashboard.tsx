@@ -127,7 +127,7 @@ export default function Dashboard() {
             <p className="font-medium text-sm">Complete your profile</p>
             <p className="text-sm text-muted-foreground">Set up your budget and preferences for personalized recommendations</p>
           </div>
-          <Button size="sm" asChild>
+          <Button variant="outline" size="sm" asChild>
             <Link href="/profile">
               <User className="h-4 w-4 mr-2" />
               Set Up Profile

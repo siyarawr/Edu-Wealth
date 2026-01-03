@@ -587,6 +587,7 @@ export default function Notes() {
               </div>
             </div>
             <Button
+              variant="outline"
               className="w-full"
               onClick={() => generateNotesMutation.mutate({ 
                 transcript: aiInput, 

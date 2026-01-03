@@ -20,7 +20,7 @@ export default function NotFound() {
                 Go Back
               </Link>
             </Button>
-            <Button asChild>
+            <Button variant="outline" asChild>
               <Link href="/">
                 <Home className="h-4 w-4 mr-2" />
                 Dashboard

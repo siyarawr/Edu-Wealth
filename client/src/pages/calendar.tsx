@@ -200,7 +200,7 @@ export default function Calendar() {
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button data-testid="button-add-event">
+              <Button variant="outline" data-testid="button-add-event">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Event
               </Button>

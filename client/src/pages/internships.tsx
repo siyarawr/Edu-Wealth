@@ -174,7 +174,7 @@ export default function Internships() {
                   <p className="text-sm">{internship.requirements}</p>
                 </div>
                 <div className="mt-4 flex items-center gap-2">
-                  <Button asChild>
+                  <Button variant="outline" asChild>
                     <a href={internship.applyUrl || "#"} target="_blank" rel="noopener noreferrer" data-testid={`button-apply-${internship.id}`}>
                       Apply Now
                       <ExternalLink className="ml-2 h-4 w-4" />

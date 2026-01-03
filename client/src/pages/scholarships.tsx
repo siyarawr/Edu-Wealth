@@ -183,7 +183,7 @@ export default function Scholarships() {
                         <span>Deadline: {new Date(scholarship.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                       </div>
                     )}
-                    <Button asChild>
+                    <Button variant="outline" asChild>
                       <a href={scholarship.applyUrl || "#"} target="_blank" rel="noopener noreferrer" data-testid={`button-apply-scholarship-${scholarship.id}`}>
                         Learn More
                         <ExternalLink className="ml-2 h-4 w-4" />
