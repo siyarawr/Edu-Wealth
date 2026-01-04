@@ -63,10 +63,23 @@ function formatDate(date: Date): string {
   return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
+function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function isSameDay(d1: Date, d2: Date): boolean {
   return d1.getFullYear() === d2.getFullYear() &&
     d1.getMonth() === d2.getMonth() &&
     d1.getDate() === d2.getDate();
+}
+
+function parseEventDate(dateStr: string | Date): Date {
+  if (dateStr instanceof Date) return dateStr;
+  const date = new Date(dateStr);
+  return new Date(date.getTime() + date.getTimezoneOffset() * 60000);
 }
 
 export default function Calendar() {
@@ -78,7 +91,7 @@ export default function Calendar() {
   const [newEvent, setNewEvent] = useState({
     title: "",
     type: "task" as string,
-    date: new Date().toISOString().split("T")[0],
+    date: toLocalDateString(new Date()),
     time: "09:00",
   });
 
@@ -103,16 +116,17 @@ export default function Calendar() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (event: { title: string; type: string; date: Date }) => {
+    mutationFn: async (event: { title: string; type: string; dateString: string }) => {
       await apiRequest("POST", "/api/calendar", {
-        ...event,
-        date: event.date.toISOString(),
+        title: event.title,
+        type: event.type,
+        dateString: event.dateString,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === "/api/calendar" });
       setIsAddDialogOpen(false);
-      setNewEvent({ title: "", type: "task", date: new Date().toISOString().split("T")[0], time: "09:00" });
+      setNewEvent({ title: "", type: "task", date: toLocalDateString(new Date()), time: "09:00" });
       toast({ title: "Event created" });
     },
     onError: (error) => {
@@ -145,11 +159,11 @@ export default function Calendar() {
   });
 
   const handleAddEvent = () => {
-    const dateTime = new Date(`${newEvent.date}T${newEvent.time}`);
+    const dateString = `${newEvent.date}T${newEvent.time}:00`;
     createMutation.mutate({
       title: newEvent.title,
       type: newEvent.type,
-      date: dateTime,
+      dateString: dateString,
     });
   };
 
@@ -160,11 +174,20 @@ export default function Calendar() {
   };
 
   const getEventsForDay = (date: Date) => {
-    const dayEvents = events.filter(e => isSameDay(new Date(e.date), date));
+    const targetDateStr = toLocalDateString(date);
+    const dayEvents = events.filter(e => {
+      const dateValue = e.date as unknown as string | Date;
+      const eventDateStr = typeof dateValue === 'string' ? dateValue.split('T')[0] : toLocalDateString(new Date(dateValue));
+      return eventDateStr === targetDateStr;
+    });
     
     if (showSeminars) {
       const daySeminars = seminars
-        .filter(s => isSameDay(new Date(s.date), date))
+        .filter(s => {
+          const dateValue = s.date as unknown as string | Date;
+          const seminarDateStr = typeof dateValue === 'string' ? dateValue.split('T')[0] : toLocalDateString(new Date(dateValue));
+          return seminarDateStr === targetDateStr;
+        })
         .map(s => ({
           id: -s.id,
           title: s.title,

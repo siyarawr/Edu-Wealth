@@ -517,10 +517,14 @@ Format your response as JSON with this structure:
       if (!userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
-      const startDate = req.query.start ? new Date(req.query.start as string) : undefined;
-      const endDate = req.query.end ? new Date(req.query.end as string) : undefined;
-      const events = await storage.getCalendarEvents(userId, startDate, endDate);
-      res.json(events);
+      const events = await storage.getCalendarEvents(userId);
+      
+      const formattedEvents = events.map(event => ({
+        ...event,
+        date: event.date instanceof Date ? event.date.toISOString() : event.date,
+      }));
+      
+      res.json(formattedEvents);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch calendar events" });
     }
@@ -532,12 +536,29 @@ Format your response as JSON with this structure:
       if (!userId) {
         return res.status(401).json({ error: "Authentication required" });
       }
+      
+      let eventDate: Date;
+      if (req.body.dateString) {
+        eventDate = new Date(req.body.dateString);
+      } else if (req.body.date) {
+        eventDate = new Date(req.body.date);
+      } else {
+        eventDate = new Date();
+      }
+      
       const event = await storage.createCalendarEvent({
-        ...req.body,
+        title: req.body.title,
+        type: req.body.type,
         userId,
-        date: req.body.date ? new Date(req.body.date) : new Date(),
+        date: eventDate,
       });
-      res.status(201).json(event);
+      
+      const responseEvent = {
+        ...event,
+        date: req.body.dateString || event.date.toISOString(),
+      };
+      
+      res.status(201).json(responseEvent);
     } catch (error) {
       console.error("Create calendar event error:", error);
       res.status(500).json({ error: "Failed to create calendar event" });
