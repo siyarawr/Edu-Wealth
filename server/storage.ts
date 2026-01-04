@@ -20,9 +20,10 @@ import {
   type Page, type InsertPage,
   type AssignmentCourse, type InsertAssignmentCourse,
   type Assignment, type InsertAssignment,
+  type UserSession, type InsertUserSession,
   users, expenses, budgets, internships, scholarships, seminars, seminarNotes, entrepreneurContent, calendarEvents,
   meetingNotes, meetingNoteShares, conversations, conversationParticipants, messages, messageReactions, financeEntries, financeReminders, userEvents,
-  pages, assignmentCourses, assignments,
+  pages, assignmentCourses, assignments, userSessions,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, gte, lte, count } from "drizzle-orm";
@@ -113,6 +114,10 @@ export interface IStorage {
   updateAssignment(id: number, assignment: Partial<InsertAssignment>): Promise<Assignment | undefined>;
   deleteAssignment(id: number): Promise<void>;
   updateUserStripeInfo(userId: string, info: { stripeCustomerId?: string; stripeSubscriptionId?: string; isPremium?: boolean }): Promise<User | undefined>;
+  createSession(session: InsertUserSession): Promise<UserSession>;
+  getSessionByToken(token: string): Promise<UserSession | undefined>;
+  deleteSession(token: string): Promise<void>;
+  deleteUserSessions(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -563,6 +568,29 @@ export class DatabaseStorage implements IStorage {
   async updateUserStripeInfo(userId: string, info: { stripeCustomerId?: string; stripeSubscriptionId?: string; isPremium?: boolean }): Promise<User | undefined> {
     const [updated] = await db.update(users).set(info).where(eq(users.id, userId)).returning();
     return updated || undefined;
+  }
+
+  async createSession(session: InsertUserSession): Promise<UserSession> {
+    const [newSession] = await db.insert(userSessions).values(session).returning();
+    return newSession;
+  }
+
+  async getSessionByToken(token: string): Promise<UserSession | undefined> {
+    const [session] = await db.select().from(userSessions).where(
+      and(
+        eq(userSessions.token, token),
+        gte(userSessions.expiresAt, new Date())
+      )
+    );
+    return session || undefined;
+  }
+
+  async deleteSession(token: string): Promise<void> {
+    await db.delete(userSessions).where(eq(userSessions.token, token));
+  }
+
+  async deleteUserSessions(userId: string): Promise<void> {
+    await db.delete(userSessions).where(eq(userSessions.userId, userId));
   }
 }
 

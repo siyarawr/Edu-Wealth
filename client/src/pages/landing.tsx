@@ -47,12 +47,8 @@ export default function Landing() {
         return;
       }
 
-      // Successfully authenticated - update the auth cache directly with the user data
-      // Then fetch fresh data to trigger the redirect via useAuth hook
-      await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      await queryClient.fetchQuery({ queryKey: ["/api/auth/user"] });
-      
-      // Loading state will be handled by the redirect
+      // Successfully authenticated - reload to pick up session cookie and redirect to dashboard
+      window.location.reload();
     } catch (error) {
       toast({
         title: "Error",

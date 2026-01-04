@@ -2,7 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import OpenAI from "openai";
-import { setupAuth, registerAuthRoutes } from "./auth/localAuth";
+import cookieParser from "cookie-parser";
+import { authMiddleware, requireAuth, hashPassword, verifyPassword, createUserSession, destroySession } from "./auth";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 
 const openai = new OpenAI({
@@ -14,9 +15,118 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Setup authentication (BEFORE other routes)
-  await setupAuth(app);
-  registerAuthRoutes(app);
+  // Setup cookie parser and auth middleware
+  app.use(cookieParser());
+  app.use(authMiddleware);
+
+  // ============ AUTH ROUTES ============
+  app.post("/api/auth/signup", async (req, res) => {
+    try {
+      const { email, password, fullName } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
+
+      const hashedPassword = await hashPassword(password);
+      const user = await storage.createUser({
+        email,
+        password: hashedPassword,
+        username: email,
+      });
+
+      if (fullName) {
+        await storage.updateUserProfile(user.id, { fullName });
+      }
+
+      await storage.logUserEvent({
+        userId: user.id,
+        eventType: "signup",
+        userEmail: email,
+        userName: fullName || email,
+      });
+
+      await createUserSession(user.id, res);
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        fullName: fullName || null,
+      });
+    } catch (error) {
+      console.error("[SIGNUP ERROR]", error);
+      res.status(500).json({ error: "Failed to create account" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      if (!user || !user.password) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+
+      const isValid = await verifyPassword(password, user.password);
+      if (!isValid) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+
+      await storage.logUserEvent({
+        userId: user.id,
+        eventType: "login",
+        userEmail: email,
+        userName: user.fullName || email,
+      });
+
+      await createUserSession(user.id, res);
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName || null,
+      });
+    } catch (error) {
+      console.error("[LOGIN ERROR]", error);
+      res.status(500).json({ error: "Failed to login" });
+    }
+  });
+
+  app.post("/api/auth/logout", async (req, res) => {
+    try {
+      await destroySession(req, res);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[LOGOUT ERROR]", error);
+      res.status(500).json({ error: "Failed to logout" });
+    }
+  });
+
+  app.get("/api/auth/user", (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    res.json({
+      id: req.user.id,
+      email: req.user.email,
+      fullName: req.user.fullName,
+      firstName: req.user.firstName,
+      lastName: req.user.lastName,
+      profileImageUrl: req.user.profileImageUrl,
+      isOnboardingComplete: req.user.isOnboardingComplete,
+      isPremium: req.user.isPremium,
+    });
+  });
   // ============ USER PROFILE ============
   app.get("/api/user/profile", async (req, res) => {
     try {
