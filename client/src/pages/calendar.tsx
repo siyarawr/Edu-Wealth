@@ -327,12 +327,22 @@ export default function Calendar() {
           const dayEvents = getEventsForDay(date);
           const isToday = isSameDay(date, today);
 
+          const handleDayClick = () => {
+            const dateStr = date.toISOString().split("T")[0];
+            setNewEvent({ ...newEvent, date: dateStr });
+            setIsAddDialogOpen(true);
+          };
+
           return (
             <div
               key={date.toISOString()}
               className={`rounded-xl p-3 ${viewDays === 4 ? "min-h-[450px]" : "min-h-[350px]"} ${isToday ? "bg-primary/5 ring-2 ring-primary/20" : "bg-card"}`}
             >
-              <div className={`text-center pb-2 mb-2 border-b ${isToday ? "border-primary/20" : "border-border/50"}`}>
+              <div 
+                className={`text-center pb-2 mb-2 border-b cursor-pointer hover-elevate rounded-lg ${isToday ? "border-primary/20" : "border-border/50"}`}
+                onClick={handleDayClick}
+                data-testid={`day-header-${date.toISOString().split("T")[0]}`}
+              >
                 <p className="text-xs text-muted-foreground uppercase">
                   {date.toLocaleDateString("en-US", { weekday: "short" })}
                 </p>
