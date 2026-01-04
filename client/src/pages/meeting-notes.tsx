@@ -124,8 +124,10 @@ export default function MeetingNotes() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<MeetingNote> }) => {
+      const { id: _id, userId: _userId, createdAt: _createdAt, updatedAt: _updatedAt, ...updateData } = data as any;
       return apiRequest("PATCH", `/api/meeting-notes/${id}`, {
-        ...data,
+        ...updateData,
+        date: updateData.date ? new Date(updateData.date).toISOString() : undefined,
         lastUpdatedBy: user?.fullName || user?.username || "User",
       });
     },
@@ -133,6 +135,14 @@ export default function MeetingNotes() {
       queryClient.invalidateQueries({ queryKey: ["/api/meeting-notes"] });
       setEditingNote(null);
       toast({ title: "Meeting note updated" });
+    },
+    onError: (error) => {
+      console.error("Update meeting note error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update meeting note. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
