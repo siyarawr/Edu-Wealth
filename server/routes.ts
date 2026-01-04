@@ -935,12 +935,24 @@ Format your response as JSON with this structure:
 
   app.patch("/api/meeting-notes/:id", async (req, res) => {
     try {
-      const note = await storage.updateMeetingNote(parseInt(req.params.id), req.body);
+      const userId = (req.user as any)?.id;
+      if (!userId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
+      const { id, createdAt, updatedAt, userId: bodyUserId, shares, ...updateData } = req.body;
+      
+      if (updateData.date) {
+        updateData.date = new Date(updateData.date);
+      }
+      
+      const note = await storage.updateMeetingNote(parseInt(req.params.id), updateData);
       if (!note) {
         return res.status(404).json({ error: "Meeting note not found" });
       }
       res.json(note);
     } catch (error) {
+      console.error("Update meeting note error:", error);
       res.status(500).json({ error: "Failed to update meeting note" });
     }
   });
